@@ -112,7 +112,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           topColour: table.top_colour || table.colour,
           frameColour: table.frame_colour || table.colour,
           quantity: table.quantity,
-          price: table.price
+          price: table.price,
+          // Customization fields
+          legSize: (table as any).leg_size || undefined,
+          legHeight: (table as any).leg_height || undefined,
+          wireHoles: (table as any).wire_holes || undefined,
+          wireHolesComment: (table as any).wire_holes_comment || undefined,
         });
         return acc;
       }, {} as Record<string, TableItem[]>);
@@ -196,7 +201,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           top_colour: table.topColour,
           frame_colour: table.frameColour,
           quantity: table.quantity,
-          price: table.price
+          price: table.price,
+          leg_size: table.legSize ?? null,
+          leg_height: table.legHeight ?? null,
+          wire_holes: table.wireHoles ?? null,
+          wire_holes_comment: table.wireHolesComment ?? null,
         }));
         
         const { error: tablesError } = await supabase
@@ -345,7 +354,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           top_colour: table.topColour,
           frame_colour: table.frameColour,
           quantity: table.quantity,
-          price: table.price
+          price: table.price,
+          leg_size: table.legSize ?? null,
+          leg_height: table.legHeight ?? null,
+          wire_holes: table.wireHoles ?? null,
+          wire_holes_comment: table.wireHolesComment ?? null,
         }));
         
         const { error: tablesError } = await supabase

@@ -32,8 +32,8 @@ const AppHeader = () => {
     navItems.push({ href: '/production', label: 'Production', icon: Factory });
   }
 
-  // ✅ Add Management link for manager users  
-  if (userRole === 'manager' || userRole === 'admin') {
+  // ✅ Add Management link for manager users
+  if (userRole === 'manager') {
     navItems.push({ href: '/management', label: 'Management', icon: Settings });
   }
 

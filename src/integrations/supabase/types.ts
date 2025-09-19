@@ -77,33 +77,45 @@ export type Database = {
           created_at: string | null
           frame_colour: string | null
           id: string
+          leg_height: string | null
+          leg_size: string | null
           order_id: string | null
           price: number
           quantity: number
           size: string
           top_colour: string | null
+          wire_holes: string | null
+          wire_holes_comment: string | null
         }
         Insert: {
           colour: string
           created_at?: string | null
           frame_colour?: string | null
           id?: string
+          leg_height?: string | null
+          leg_size?: string | null
           order_id?: string | null
           price: number
           quantity: number
           size: string
           top_colour?: string | null
+          wire_holes?: string | null
+          wire_holes_comment?: string | null
         }
         Update: {
           colour?: string
           created_at?: string | null
           frame_colour?: string | null
           id?: string
+          leg_height?: string | null
+          leg_size?: string | null
           order_id?: string | null
           price?: number
           quantity?: number
           size?: string
           top_colour?: string | null
+          wire_holes?: string | null
+          wire_holes_comment?: string | null
         }
         Relationships: [
           {
@@ -391,13 +403,9 @@ export type Database = {
       super_admin_sign_in: {
         Args: { p_password: string; p_username: string }
         Returns: {
+          created_at: string
           email: string
-          expires_at: string
-          is_active: boolean
-          last_login: string
-          session_id: string
-          session_token: string
-          user_id: string
+          id: string
           username: string
         }[]
       }

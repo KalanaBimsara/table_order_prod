@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
-import { Shield, Users, Package, TrendingUp, DollarSign, LogOut, RefreshCw, Calendar, CalendarDays, Clock, UserCog } from 'lucide-react';
+import { Shield, Users, Package, TrendingUp, DollarSign, LogOut, RefreshCw, Calendar, CalendarDays, Clock, UserCog, UserPlus } from 'lucide-react';
 import { useSuperAdminAuth } from '@/contexts/SuperAdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import OrderDetailsTable from '@/components/OrderDetailsTable';
 import UserManagement from '@/components/UserManagement';
 import { getFactoryPrice, calculateOrderProfit } from '@/types/order';
@@ -69,6 +69,7 @@ const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
 const SuperAdminDashboard = () => {
   const { user, signOut } = useSuperAdminAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,6 +306,15 @@ const SuperAdminDashboard = () => {
                     Welcome, {user.username}
                  </span>
               )}
+              <Button 
+                variant="outline" 
+                size={isMobile ? "icon" : "sm"} 
+                onClick={() => navigate('/super-admin/create-user')}
+                aria-label={isMobile ? "Create User" : undefined}
+              >
+                <UserPlus className={isMobile ? "h-5 w-5" : "h-4 w-4 mr-2"} />
+                {!isMobile && "Create User"}
+              </Button>
               <Button 
                 variant="outline" 
                 size={isMobile ? "icon" : "sm"} 

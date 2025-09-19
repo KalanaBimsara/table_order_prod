@@ -228,6 +228,35 @@ const OrderCard: React.FC<OrderCardProps> = ({
                         <span className="font-medium">Quantity: {table.quantity} {table.quantity > 1 ? 'tables' : 'table'}</span>
                       </div>
                     </div>
+                    
+                    {/* Customization details */}
+                    {(table.legSize || table.legHeight || table.wireHoles) && (
+                      <div className="mt-3 pt-2 border-t border-gray-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs md:text-sm">
+                          {table.legSize && (
+                            <div className="text-muted-foreground">
+                              <span>Leg Size: </span>
+                              <span className="font-medium text-foreground">{table.legSize}</span>
+                            </div>
+                          )}
+                          {table.legHeight && (
+                            <div className="text-muted-foreground">
+                              <span>Leg Height: </span>
+                              <span className="font-medium text-foreground">{table.legHeight}</span>
+                            </div>
+                          )}
+                          {table.wireHoles && table.wireHoles !== 'none' && (
+                            <div className="text-muted-foreground sm:col-span-2">
+                              <span>Wire Holes: </span>
+                              <span className="font-medium text-foreground">{table.wireHoles}</span>
+                              {table.wireHoles === 'special' && table.wireHolesComment && (
+                                <span className="block mt-1 text-blue-600 italic">{table.wireHolesComment}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>) : <p className="text-muted-foreground text-sm md:text-base">No table details available.</p>}
               
               <div className="flex justify-end items-center gap-2 pt-3 border-t">

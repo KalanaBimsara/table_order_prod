@@ -41,6 +41,7 @@ const AppHeaderWrapper = () => {
         </Button>
 
         <div className="flex items-center space-x-2 sm:space-x-4"> {/* Adjusted space-x for mobile */}
+
           {/* ✅ Show "Production" button for admin users */}
           {userRole === "admin" && (
             <Button
@@ -51,6 +52,19 @@ const AppHeaderWrapper = () => {
             >
               <Factory size={16} className={isMobile ? "" : "mr-2"} />
               {!isMobile && "Production"}
+            </Button>
+          )}
+
+          {/* ✅ Show "Production Queue" button for admin and manager users */}
+          {(userRole === "admin" || userRole === "manager") && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/production-queue")}
+              size={isMobile ? "icon" : "default"}
+              aria-label={isMobile ? "Production Queue" : undefined}
+            >
+              <Factory size={16} className={isMobile ? "" : "mr-2"} />
+              {!isMobile && "Production Queue"}
             </Button>
           )}
 

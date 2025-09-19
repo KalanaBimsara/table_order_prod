@@ -5,12 +5,19 @@ export type TableItem = {
   frameColour: string, 
   colour: string,  // Keeping for backward compatibility
   quantity: number,
-  price: number
+  price: number,
+  // Customization fields
+  legSize?: '1.5x1.5' | '3x1.5',
+  legHeight?: string,
+  wireHoles?: 'none' | 'normal' | 'special',
+  wireHolesComment?: string
 };
 
 export type OrderStatus = 'pending' | 'assigned' | 'completed';
 
 export type UserRole = 'admin' | 'delivery' | 'customer' | 'manager';
+
+export type DeliveryStatus = 'pending' | 'ready';
 
 export type Order = {
   id: string,
@@ -29,7 +36,7 @@ export type Order = {
   delivery_person_id?: string,  // Added to match database column name
   createdBy?: string,
   salesPersonName?: string,  // Added for sales person tracking
-  delivery_status?: 'pending' | 'ready_for_delivery' | 'assigned' | 'delivered'  // Added delivery status tracking
+  deliveryStatus?: DeliveryStatus  // Added for delivery status tracking
 };
 
 export const tableSizeOptions = [

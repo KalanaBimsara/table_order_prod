@@ -4,7 +4,10 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 import { tableSizeOptions, colourOptions } from '@/types/order';
 
@@ -31,6 +34,9 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [customSize, setCustomSize] = useState('');
   const [customPrice, setCustomPrice] = useState('');
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  
+  const watchWireHoles = form.watch(`tables.${index}.wireHoles`);
 
   // Calculate the price based on the selected size
   const handleSizeChange = (value: string) => {
@@ -194,6 +200,130 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           )} 
         />
       </div>
+
+      {/* Customize Order Section */}
+      <Collapsible open={isCustomizeOpen} onOpenChange={setIsCustomizeOpen}>
+        <CollapsibleTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex items-center gap-2 p-2 h-auto text-left w-full justify-start"
+          >
+            {isCustomizeOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            Customize Order
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 pt-4 border-t">
+          {/* Leg Size */}
+          <FormField
+            control={form.control}
+            name={`tables.${index}.legSize`}
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Leg Size</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="1.5x1.5" id={`leg-size-1-${index}`} />
+                      <label htmlFor={`leg-size-1-${index}`} className="text-sm font-normal cursor-pointer">
+                        1.5" x 1.5"
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="3x1.5" id={`leg-size-2-${index}`} />
+                      <label htmlFor={`leg-size-2-${index}`} className="text-sm font-normal cursor-pointer">
+                        3" x 1.5"
+                      </label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Leg Height */}
+          <FormField
+            control={form.control}
+            name={`tables.${index}.legHeight`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Leg Height</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter leg height (e.g., 30 inches)"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Wire Holes */}
+          <FormField
+            control={form.control}
+            name={`tables.${index}.wireHoles`}
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Wire Holes</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="none" id={`wire-holes-none-${index}`} />
+                      <label htmlFor={`wire-holes-none-${index}`} className="text-sm font-normal cursor-pointer">
+                        No wire holes
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="normal" id={`wire-holes-normal-${index}`} />
+                      <label htmlFor={`wire-holes-normal-${index}`} className="text-sm font-normal cursor-pointer">
+                        Normal wire holes
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="special" id={`wire-holes-special-${index}`} />
+                      <label htmlFor={`wire-holes-special-${index}`} className="text-sm font-normal cursor-pointer">
+                        Special
+                      </label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Special Wire Holes Comment */}
+          {watchWireHoles === 'special' && (
+            <FormField
+              control={form.control}
+              name={`tables.${index}.wireHolesComment`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Special Wire Holes Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe the special wire hole requirements..."
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+        </CollapsibleContent>
+      </Collapsible>
       
       {showRemoveButton && (
         <div className="flex justify-end mt-2">

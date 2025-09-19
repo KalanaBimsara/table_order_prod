@@ -33,7 +33,6 @@ type OrderResponse = {
   completed_at: string | null;
   delivery_person_id: string | null;
   sales_person_name: string | null;  // Added this field
-  delivery_status: string | null;  // Added delivery status field
 };
 
 type OrderTableResponse = {
@@ -63,8 +62,8 @@ export function OrderList() {
   const completedOrders = getFilteredOrders('completed', selectedSalesPerson);
   
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
-  const [deliveryCompletedOrders, setDeliveryCompletedOrders] = useState<Order[]>([]);
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
+  const [deliveryCompletedOrders, setDeliveryCompletedOrders] = useState<Order[]>([]);
   const salesPersons = getSalesPersons();
 
   // Apply date and customer name filters to completed orders
@@ -142,110 +141,19 @@ export function OrderList() {
   React.useEffect(() => {
     if (userRole === 'delivery') {
       fetchAvailableOrders();
-      fetchDeliveryCompletedOrders();
       fetchReadyOrders();
+      fetchDeliveryCompletedOrders();
     }
   }, [userRole, user]);
 
-  const fetchAvailableOrders = async () => {
-    try {
-      // First, fetch the pending orders that are NOT ready for delivery, ordered by creation date (latest first)
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('status', 'pending')
-        .or('delivery_status.is.null,delivery_status.eq.pending')
-        .order('created_at', { ascending: false });
-
-      if (ordersError) {
-        console.error('Error fetching available orders:', ordersError);
-        toast.error('Failed to fetch available orders');
-        return;
-      }
-
-      if (!ordersData || ordersData.length === 0) {
-        setAvailableOrders([]);
-        return;
-      }
-
-      // Extract order IDs to fetch related table data
-      const orderIds = ordersData.map(order => order.id);
-
-      // Fetch the order_tables data for these orders
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('*')
-        .in('order_id', orderIds);
-
-      if (tablesError) {
-        console.error('Error fetching order tables:', tablesError);
-        toast.error('Failed to fetch table details');
-        return;
-      }
-
-      // Group tables by order_id
-      const tablesByOrder = (tablesData || []).reduce((acc, table) => {
-        if (!acc[table.order_id]) {
-          acc[table.order_id] = [];
-        }
-        acc[table.order_id].push({
-          id: table.id,
-          size: table.size,
-          colour: table.colour,
-          topColour: table.top_colour || table.colour,
-          frameColour: table.frame_colour || table.colour,
-          quantity: table.quantity,
-          price: table.price
-        });
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      // Transform the data to match the Order type structure with the correct color properties
-      const formattedOrders = (ordersData as OrderResponse[]).map(order => ({
-        id: order.id,
-        customerName: order.customer_name,
-        address: order.address,
-        contactNumber: order.contact_number,
-        // Use tables data if available, otherwise create a fallback
-        tables: tablesByOrder[order.id] || [{
-          id: order.id,
-          size: order.table_size,
-          colour: order.colour,
-          topColour: order.colour,
-          frameColour: order.colour,
-          quantity: order.quantity,
-          price: order.price / order.quantity
-        }],
-        note: order.note,
-        status: order.status as OrderStatus,
-        createdAt: new Date(order.created_at),
-        completedAt: order.completed_at ? new Date(order.completed_at) : undefined,
-        totalPrice: order.price,
-        assignedTo: order.delivery_person_id,
-        salesPersonName: order.sales_person_name,  // Include sales person name
-        delivery_status: order.delivery_status as any
-      }));
-
-      // Sort by creation date (latest first) - already sorted by query but ensuring consistency
-      const sortedOrders = formattedOrders.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      setAvailableOrders(sortedOrders);
-    } catch (error) {
-      console.error('Error processing available orders:', error);
-      toast.error('An error occurred while fetching orders');
-    }
-  };
-
   const fetchReadyOrders = async () => {
     try {
-      // Fetch orders that are ready for delivery
+      // Fetch orders that are ready for delivery but not yet assigned
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .eq('status', 'pending')
-        .eq('delivery_status', 'ready_for_delivery')
+        .eq('delivery_status', 'ready')
         .order('created_at', { ascending: false });
 
       if (ordersError) {
@@ -313,13 +221,103 @@ export function OrderList() {
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
         salesPersonName: order.sales_person_name,
-        delivery_status: 'ready_for_delivery' as any
+        deliveryStatus: 'ready' as const
       }));
 
       setReadyOrders(formattedOrders);
     } catch (error) {
       console.error('Error processing ready orders:', error);
       toast.error('An error occurred while fetching ready orders');
+    }
+  };
+
+  const fetchAvailableOrders = async () => {
+    try {
+      // First, fetch the pending orders that are NOT ready for delivery, ordered by creation date (latest first)
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'pending')
+        .neq('delivery_status', 'ready')
+        .order('created_at', { ascending: false });
+
+      if (ordersError) {
+        console.error('Error fetching available orders:', ordersError);
+        toast.error('Failed to fetch available orders');
+        return;
+      }
+
+      if (!ordersData || ordersData.length === 0) {
+        setAvailableOrders([]);
+        return;
+      }
+
+      // Extract order IDs to fetch related table data
+      const orderIds = ordersData.map(order => order.id);
+
+      // Fetch the order_tables data for these orders
+      const { data: tablesData, error: tablesError } = await supabase
+        .from('order_tables')
+        .select('*')
+        .in('order_id', orderIds);
+
+      if (tablesError) {
+        console.error('Error fetching order tables:', tablesError);
+        toast.error('Failed to fetch table details');
+        return;
+      }
+
+      // Group tables by order_id
+      const tablesByOrder = (tablesData || []).reduce((acc, table) => {
+        if (!acc[table.order_id]) {
+          acc[table.order_id] = [];
+        }
+        acc[table.order_id].push({
+          id: table.id,
+          size: table.size,
+          colour: table.colour,
+          topColour: table.top_colour || table.colour,
+          frameColour: table.frame_colour || table.colour,
+          quantity: table.quantity,
+          price: table.price
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Transform the data to match the Order type structure with the correct color properties
+      const formattedOrders = (ordersData as OrderResponse[]).map(order => ({
+        id: order.id,
+        customerName: order.customer_name,
+        address: order.address,
+        contactNumber: order.contact_number,
+        // Use tables data if available, otherwise create a fallback
+        tables: tablesByOrder[order.id] || [{
+          id: order.id,
+          size: order.table_size,
+          colour: order.colour,
+          topColour: order.colour,
+          frameColour: order.colour,
+          quantity: order.quantity,
+          price: order.price / order.quantity
+        }],
+        note: order.note,
+        status: order.status as OrderStatus,
+        createdAt: new Date(order.created_at),
+        completedAt: order.completed_at ? new Date(order.completed_at) : undefined,
+        totalPrice: order.price,
+        assignedTo: order.delivery_person_id,
+        salesPersonName: order.sales_person_name  // Include sales person name
+      }));
+
+      // Sort by creation date (latest first) - already sorted by query but ensuring consistency
+      const sortedOrders = formattedOrders.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setAvailableOrders(sortedOrders);
+    } catch (error) {
+      console.error('Error processing available orders:', error);
+      toast.error('An error occurred while fetching orders');
     }
   };
 
@@ -405,8 +403,7 @@ export function OrderList() {
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
         delivery_person_id: order.delivery_person_id,
-        salesPersonName: order.sales_person_name,  // Include sales person name
-        delivery_status: order.delivery_status as any
+        salesPersonName: order.sales_person_name  // Include sales person name
       }));
 
       console.log('Formatted completed orders:', formattedOrders);
@@ -423,12 +420,12 @@ export function OrderList() {
       return;
     }
     
-    try {
-      await assignOrder(orderId, user.id);
-      toast.success('Order assigned to you successfully');
-      fetchAvailableOrders(); // Refresh available orders
-      fetchReadyOrders(); // Refresh ready orders
-    } catch (error) {
+      try {
+        await assignOrder(orderId, user.id);
+        toast.success('Order assigned to you successfully');
+        fetchAvailableOrders(); // Refresh available orders
+        fetchReadyOrders(); // Refresh ready orders
+      } catch (error) {
       console.error('Error assigning order:', error);
       toast.error('Failed to assign order');
     }
@@ -452,13 +449,10 @@ export function OrderList() {
             <TabsList className="grid w-full grid-cols-4 mobile-tabs-container">
               <TabsTrigger value="myDeliveries" className="mobile-tab-item">
                 <Truck size={isMobile ? 14 : 16} />
-                <span className="mobile-tab-label">My Orders</span>
+                <span className="mobile-tab-label">My Deliveries</span>
               </TabsTrigger>
               <TabsTrigger value="ready" className="mobile-tab-item">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <Package size={isMobile ? 14 : 16} />
-                </div>
+                <CheckCircle2 size={isMobile ? 14 : 16} />
                 <span className="mobile-tab-label">Ready</span>
               </TabsTrigger>
               <TabsTrigger value="available" className="mobile-tab-item">
@@ -494,39 +488,36 @@ export function OrderList() {
             </TabsContent>
             
             <TabsContent value="ready" className="mt-4">
+              <div className="mb-4 text-sm text-muted-foreground">
+                Orders ready for delivery pickup - marked by management
+              </div>
               <div className="space-y-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <h3 className="font-semibold text-green-800">Ready for Delivery</h3>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    These orders have been completed and are ready for delivery pickup.
-                  </p>
-                </div>
                 {readyOrders.length > 0 ? (
                   readyOrders.map(order => (
-                    <div key={order.id} className="relative">
-                      <div className="absolute -left-2 top-4 w-1 h-16 bg-green-500 rounded-full"></div>
-                      <OrderCard 
-                        key={order.id} 
-                        order={order}
-                        showSalesPerson={true}
-                        actionButton={
-                          <button 
-                            onClick={() => handleSelfAssign(order.id)}
-                            className="w-full md:w-auto px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors flex items-center gap-2"
-                          >
-                            <div className="w-2 h-2 bg-green-200 rounded-full"></div>
-                            Assign to Me
-                          </button>
-                        }
-                      />
+                    <div key={order.id} className="relative border-2 border-green-200 rounded-lg bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+                      <div className="absolute top-2 right-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="p-1">
+                        <OrderCard 
+                          key={order.id} 
+                          order={order}
+                          showSalesPerson={true}
+                          actionButton={
+                            <button 
+                              onClick={() => handleSelfAssign(order.id)}
+                              className="w-full md:w-auto px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                            >
+                              ✓ Assign to Me
+                            </button>
+                          }
+                        />
+                      </div>
                     </div>
                   ))
                 ) : (
                   <p className="text-center py-10 text-xl md:text-2xl text-muted-foreground">
-                    No orders ready for delivery.
+                    No orders ready for delivery yet.
                   </p>
                 )}
               </div>

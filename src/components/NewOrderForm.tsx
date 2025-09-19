@@ -22,7 +22,12 @@ const tableItemSchema = z.object({
   frameColour: z.string(),
   colour: z.string(), // Keep for backward compatibility
   quantity: z.number().int().positive().min(1, { message: "Quantity must be at least 1" }),
-  price: z.number()
+  price: z.number(),
+  // Customization fields
+  legSize: z.enum(['1.5x1.5', '3x1.5']).optional(),
+  legHeight: z.string().optional(),
+  wireHoles: z.enum(['none', 'normal', 'special']).optional(),
+  wireHolesComment: z.string().optional()
 });
 
 // Define the overall form schema
@@ -72,6 +77,10 @@ export function NewOrderForm() {
           colour: table.colour, // For compatibility
           quantity: table.quantity,
           price: table.price,
+          legSize: table.legSize,
+          legHeight: table.legHeight,
+          wireHoles: table.wireHoles,
+          wireHolesComment: table.wireHolesComment,
         })),
         note: values.note || "",
         totalPrice,
@@ -96,7 +105,7 @@ export function NewOrderForm() {
     }
   }
 
-  // Create a new empty table with default values
+// Create a new empty table with default values
 const createEmptyTable = (): TableItem => ({
   id: uuidv4(),
   size: '24x32',
@@ -104,7 +113,11 @@ const createEmptyTable = (): TableItem => ({
   frameColour: 'black',
   colour: 'teak', // For compatibility, align with topColour
   quantity: 1,
-  price: 11000  // Updated default price for 24x32 table
+  price: 11000,  // Updated default price for 24x32 table
+  legSize: '1.5x1.5',
+  legHeight: '',
+  wireHoles: 'none',
+  wireHolesComment: ''
 });
 
   // Add a new table to the form
@@ -306,13 +319,17 @@ function useFormProvider() {
       contactNumber: "",
       tables: [
         {
-id: uuidv4(),
+          id: uuidv4(),
           size: '24x32',
           topColour: 'teak',
           frameColour: 'black',
           colour: 'teak', // For compatibility
           quantity: 1,
-          price: 11000  // Updated default price
+          price: 11000,  // Updated default price
+          legSize: '1.5x1.5',
+          legHeight: '',
+          wireHoles: 'none',
+          wireHolesComment: ''
         }
       ],
       note: "",
