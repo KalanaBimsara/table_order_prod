@@ -10,7 +10,9 @@ export type TableItem = {
   legSize?: '1.5x1.5' | '3x1.5',
   legHeight?: string,
   wireHoles?: 'none' | 'normal' | 'special',
-  wireHolesComment?: string
+  wireHolesComment?: string,
+  frontPanelSize?: '6' | '12' | '16' | '24',
+  frontPanelLength?: number
 };
 
 export type OrderStatus = 'pending' | 'assigned' | 'completed';

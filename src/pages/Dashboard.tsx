@@ -217,9 +217,9 @@ const Dashboard: React.FC = () => {
                           <h4 className="font-medium mb-2">Order Summary</h4>
                           <div className="text-sm text-muted-foreground space-y-1">
                             <p><span className="font-medium">Total Items:</span> {order.tables.length}</p>
-                            <p><span className="font-medium">Total Price:</span> ₹{order.totalPrice.toLocaleString()}</p>
+                            <p><span className="font-medium">Total Price:</span> LKR {order.totalPrice.toLocaleString()}</p>
                             {order.deliveryFee && (
-                              <p><span className="font-medium">Delivery Fee:</span> ₹{order.deliveryFee.toLocaleString()}</p>
+                              <p><span className="font-medium">Delivery Fee:</span> LKR {order.deliveryFee.toLocaleString()}</p>
                             )}
                           </div>
                         </div>
@@ -248,10 +248,10 @@ const Dashboard: React.FC = () => {
                                     </div>
                                   )}
                                 </div>
-                                <div className="text-right">
-                                  <span className="font-medium">Qty: {table.quantity}</span>
-                                  <span className="text-muted-foreground ml-2">₹{Number(table.price).toLocaleString()}</span>
-                                </div>
+                                 <div className="text-right">
+                                   <span className="font-medium">Qty: {table.quantity}</span>
+                                   <span className="text-muted-foreground ml-2">LKR {Number(table.price).toLocaleString()}</span>
+                                 </div>
                               </div>
                             ))}
                           </div>

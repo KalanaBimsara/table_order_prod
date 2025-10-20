@@ -76,6 +76,8 @@ export type Database = {
           colour: string
           created_at: string | null
           frame_colour: string | null
+          front_panel_length: number | null
+          front_panel_size: string | null
           id: string
           leg_height: string | null
           leg_size: string | null
@@ -91,6 +93,8 @@ export type Database = {
           colour: string
           created_at?: string | null
           frame_colour?: string | null
+          front_panel_length?: number | null
+          front_panel_size?: string | null
           id?: string
           leg_height?: string | null
           leg_size?: string | null
@@ -106,6 +110,8 @@ export type Database = {
           colour?: string
           created_at?: string | null
           frame_colour?: string | null
+          front_panel_length?: number | null
+          front_panel_size?: string | null
           id?: string
           leg_height?: string | null
           leg_size?: string | null

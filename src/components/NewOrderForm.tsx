@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import TableItemForm from './TableItemForm';
 import { TableItem } from '@/types/order';
+import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPanelCost } from '@/lib/utils';
 
 // Define schema for a single table item
 const tableItemSchema = z.object({
@@ -27,7 +28,9 @@ const tableItemSchema = z.object({
   legSize: z.enum(['1.5x1.5', '3x1.5']).optional(),
   legHeight: z.string().optional(),
   wireHoles: z.enum(['none', 'normal', 'special']).optional(),
-  wireHolesComment: z.string().optional()
+  wireHolesComment: z.string().optional(),
+  frontPanelSize: z.enum(['6', '12', '16', '24']).optional(),
+  frontPanelLength: z.number().optional()
 });
 
 // Define the overall form schema
@@ -52,14 +55,23 @@ export function NewOrderForm() {
   const watchDeliveryFee = form.watch("deliveryFee") || 0;
   const watchAdditionalCharges = form.watch("additionalCharges") || 0;
   
-  // Calculate total price - multiply price by quantity for each table
+  // Calculate base tables cost
   const tablesCost = React.useMemo(() => {
     return watchTables?.reduce((sum, table) => sum + (table.price * table.quantity), 0) || 0;
   }, [watchTables]);
 
+  // Calculate additional costs (leg size + front panels)
+  const additionalTableCosts = React.useMemo(() => {
+    return watchTables?.reduce((sum, table) => {
+      const legCost = calculateLegSizeCost(table.legSize) * table.quantity;
+      const panelCost = calculateFrontPanelCost(table.frontPanelSize, table.frontPanelLength) * table.quantity;
+      return sum + legCost + panelCost;
+    }, 0) || 0;
+  }, [watchTables]);
+
   const totalPrice = React.useMemo(() => {
-    return tablesCost + watchDeliveryFee + watchAdditionalCharges;
-  }, [tablesCost, watchDeliveryFee, watchAdditionalCharges]);
+    return tablesCost + additionalTableCosts + watchDeliveryFee + watchAdditionalCharges;
+  }, [tablesCost, additionalTableCosts, watchDeliveryFee, watchAdditionalCharges]);
 
   // Handle form submission
   async function onSubmit(values: OrderFormValues) {
@@ -81,6 +93,8 @@ export function NewOrderForm() {
           legHeight: table.legHeight,
           wireHoles: table.wireHoles,
           wireHolesComment: table.wireHolesComment,
+          frontPanelSize: table.frontPanelSize,
+          frontPanelLength: table.frontPanelLength
         })),
         note: values.note || "",
         totalPrice,
@@ -115,9 +129,11 @@ const createEmptyTable = (): TableItem => ({
   quantity: 1,
   price: 11000,  // Updated default price for 24x32 table
   legSize: '1.5x1.5',
-  legHeight: '',
+  legHeight: '30',
   wireHoles: 'none',
-  wireHolesComment: ''
+  wireHolesComment: '',
+  frontPanelSize: undefined,
+  frontPanelLength: undefined
 });
 
   // Add a new table to the form
@@ -264,8 +280,11 @@ const createEmptyTable = (): TableItem => ({
                 />
                 
                 <div className="grid grid-cols-2 gap-4 text-right">
-                  <div className="text-sm text-muted-foreground text-right">Tables Cost:</div>
+                  <div className="text-sm text-muted-foreground text-right">Tables Base Cost:</div>
                   <div>{getFormattedPrice(tablesCost)}</div>
+                  
+                  <div className="text-sm text-muted-foreground text-right">Customizations (Legs & Panels):</div>
+                  <div>{getFormattedPrice(additionalTableCosts)}</div>
                   
                   <div className="text-sm text-muted-foreground text-right">Delivery Fee:</div>
                   <div>{getFormattedPrice(watchDeliveryFee)}</div>
@@ -273,8 +292,8 @@ const createEmptyTable = (): TableItem => ({
                   <div className="text-sm text-muted-foreground text-right">Additional Charges:</div>
                   <div>{getFormattedPrice(watchAdditionalCharges)}</div>
                   
-                  <div className="text-base font-medium text-right">Total:</div>
-                  <div className="text-base font-semibold">
+                  <div className="text-base font-medium text-right border-t pt-2">Total:</div>
+                  <div className="text-base font-semibold border-t pt-2">
                     {getFormattedPrice(totalPrice)}
                   </div>
                 </div>
@@ -327,9 +346,11 @@ function useFormProvider() {
           quantity: 1,
           price: 11000,  // Updated default price
           legSize: '1.5x1.5',
-          legHeight: '',
+          legHeight: '30',
           wireHoles: 'none',
-          wireHolesComment: ''
+          wireHolesComment: '',
+          frontPanelSize: undefined,
+          frontPanelLength: undefined
         }
       ],
       note: "",

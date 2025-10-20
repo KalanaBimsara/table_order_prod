@@ -3,6 +3,7 @@ import { Order, OrderStatus, TableItem } from '@/types/order';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateTableAdditionalCosts } from '@/lib/utils';
 
 interface AppContextType {
   orders: Order[];
@@ -83,23 +84,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
   
-      if (!ordersData || ordersData.length === 0) {
-        console.log("No orders returned from query");
-        setOrders([]);
-        return;
-      }
-  
-      const orderIds = ordersData.map(order => order.id);
-  
-      const { data: tablesData, error: tablesError } = await supabase
+    if (!ordersData || ordersData.length === 0) {
+      console.log("No orders returned from query");
+      setOrders([]);
+      return;
+    }
+
+    // Filter out any invalid order IDs
+    const orderIds = ordersData
+      .map(order => order.id)
+      .filter(id => id != null);
+
+    // Only fetch tables if we have valid order IDs
+    let tablesData = [];
+    if (orderIds.length > 0) {
+      const { data, error: tablesError } = await supabase
         .from('order_tables')
         .select('*')
         .in('order_id', orderIds);
-  
+
       if (tablesError) {
         console.error('Error fetching order tables:', tablesError);
         toast.error(`Failed to fetch order tables: ${tablesError.message}`);
+      } else {
+        tablesData = data || [];
       }
+    }
+  
   
       const tablesByOrder = (tablesData || []).reduce((acc, table) => {
         if (!acc[table.order_id]) {
@@ -118,6 +129,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           legHeight: (table as any).leg_height || undefined,
           wireHoles: (table as any).wire_holes || undefined,
           wireHolesComment: (table as any).wire_holes_comment || undefined,
+          frontPanelSize: (table as any).front_panel_size || undefined,
+          frontPanelLength: (table as any).front_panel_length || undefined,
         });
         return acc;
       }, {} as Record<string, TableItem[]>);
@@ -155,10 +168,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addOrder = async (orderData: Omit<Order, 'id' | 'status' | 'createdAt'>) => {
     try {
-      const calculatedTotalPrice = orderData.tables.reduce((sum, table) => 
+      const calculatedBasePrice = orderData.tables.reduce((sum, table) => 
         sum + (table.price * table.quantity), 0);
+      const customizationCosts = orderData.tables.reduce((sum, table) => {
+        return sum + calculateTableAdditionalCosts(table.legSize, table.frontPanelSize, table.frontPanelLength) * table.quantity;
+      }, 0);
       
-      const finalTotalPrice = calculatedTotalPrice + (orderData.deliveryFee || 0) + (orderData.additionalCharges || 0);
+      const finalTotalPrice = calculatedBasePrice + customizationCosts + (orderData.deliveryFee || 0) + (orderData.additionalCharges || 0);
 
       // Get current user's name for sales_person_name
       const { data: profileData } = await supabase
@@ -206,6 +222,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           leg_height: table.legHeight ?? null,
           wire_holes: table.wireHoles ?? null,
           wire_holes_comment: table.wireHolesComment ?? null,
+          front_panel_size: table.frontPanelSize ?? null,
+          front_panel_length: table.frontPanelLength ?? null,
         }));
         
         const { error: tablesError } = await supabase
@@ -305,10 +323,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       console.log(`Editing order ${orderId}`);
       
-      const calculatedTotalPrice = orderData.tables.reduce((sum, table) => 
+      const calculatedBasePrice = orderData.tables.reduce((sum, table) => 
         sum + (table.price * table.quantity), 0);
+      const customizationCosts = orderData.tables.reduce((sum, table) => {
+        return sum + calculateTableAdditionalCosts(table.legSize, table.frontPanelSize, table.frontPanelLength) * table.quantity;
+      }, 0);
       
-      const finalTotalPrice = calculatedTotalPrice + (orderData.deliveryFee || 0) + (orderData.additionalCharges || 0);
+      const finalTotalPrice = calculatedBasePrice + customizationCosts + (orderData.deliveryFee || 0) + (orderData.additionalCharges || 0);
 
       // Update the order
       const { error: orderError } = await supabase
@@ -359,6 +380,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           leg_height: table.legHeight ?? null,
           wire_holes: table.wireHoles ?? null,
           wire_holes_comment: table.wireHolesComment ?? null,
+          front_panel_size: table.frontPanelSize ?? null,
+          front_panel_length: table.frontPanelLength ?? null,
         }));
         
         const { error: tablesError } = await supabase

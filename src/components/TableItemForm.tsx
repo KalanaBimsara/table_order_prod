@@ -322,6 +322,50 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
               )}
             />
           )}
+
+          {/* Front Panel Section */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <FormField
+              control={form.control}
+              name={`tables.${index}.frontPanelSize`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Front Panel Size</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select size" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="6">6" per 1ft - LKR 250</SelectItem>
+                      <SelectItem value="12">12" per 1ft - LKR 500</SelectItem>
+                      <SelectItem value="16">16" per 1ft - LKR 750</SelectItem>
+                      <SelectItem value="24">24" per 1ft - LKR 1000</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name={`tables.${index}.frontPanelLength`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Front Panel Length (ft)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Enter length"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
         </CollapsibleContent>
       </Collapsible>
       

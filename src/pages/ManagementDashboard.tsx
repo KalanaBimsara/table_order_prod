@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Package, CheckCircle2 } from 'lucide-react';
+import { Settings, Package, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Order } from '@/types/order';
 
 const ManagementDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [awaitingApprovalOrders, setAwaitingApprovalOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -216,14 +218,24 @@ const ManagementDashboard: React.FC = () => {
                       Customer: {order.customerName} • Created: {order.createdAt.toLocaleDateString()}
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={() => markAwaitingOrderReady(order.id)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    size="sm"
-                  >
-                    <CheckCircle2 size={16} className="mr-2" />
-                    Mark Ready for Delivery
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => navigate(`/order-form/${order.id}`)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <FileText size={16} className="mr-2" />
+                      Order Form
+                    </Button>
+                    <Button
+                      onClick={() => markAwaitingOrderReady(order.id)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle2 size={16} className="mr-2" />
+                      Mark Ready for Delivery
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -321,16 +333,26 @@ const ManagementDashboard: React.FC = () => {
                       Customer: {order.customerName} • Created: {order.createdAt.toLocaleDateString()}
                     </CardDescription>
                   </div>
-                  {order.deliveryStatus === 'pending' && (
+                  <div className="flex gap-2">
                     <Button
-                      onClick={() => markAsReadyForDelivery(order.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => navigate(`/order-form/${order.id}`)}
+                      variant="outline"
                       size="sm"
                     >
-                      <CheckCircle2 size={16} className="mr-2" />
-                      Mark Ready for Delivery
+                      <FileText size={16} className="mr-2" />
+                      Order Form
                     </Button>
-                  )}
+                    {order.deliveryStatus === 'pending' && (
+                      <Button
+                        onClick={() => markAsReadyForDelivery(order.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle2 size={16} className="mr-2" />
+                        Mark Ready for Delivery
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

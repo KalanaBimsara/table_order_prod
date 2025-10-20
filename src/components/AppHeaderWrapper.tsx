@@ -68,6 +68,19 @@ const AppHeaderWrapper = () => {
             </Button>
           )}
 
+          {/* ✅ Show "Management Dashboard" button for admin and manager users */}
+          {(userRole === "admin" || userRole === "manager") && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/management")}
+              size={isMobile ? "icon" : "default"}
+              aria-label={isMobile ? "Management" : undefined}
+            >
+              <Shield size={16} className={isMobile ? "" : "mr-2"} />
+              {!isMobile && "Management"}
+            </Button>
+          )}
+
           {/* ✅ Show "Super Admin" button for admin users */}
           {userRole === "admin" && (
             <Button

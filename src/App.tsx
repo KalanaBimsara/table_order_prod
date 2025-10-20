@@ -16,6 +16,7 @@ import Invoice from "./pages/Invoice";
 import Production from "./pages/Production";
 import ProductionQueue from "./pages/ProductionQueue";
 import ManagementDashboard from "./pages/ManagementDashboard";
+import OrderForm from "./pages/OrderForm";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
@@ -112,6 +113,22 @@ const App = () => {
                                 element={
                                   <ProtectedRoute allowedRoles={['admin', 'manager']}>
                                     <ProductionQueue />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/management" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                                    <ManagementDashboard />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/order-form/:orderId" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                                    <OrderForm />
                                   </ProtectedRoute>
                                 } 
                               />
