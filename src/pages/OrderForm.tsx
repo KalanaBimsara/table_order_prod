@@ -231,8 +231,8 @@ const OrderForm: React.FC = () => {
           </div>
           {order.note && (
             <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: colors.border }}>
-              <span className="font-bold">Notes / </span>{order.note}
-              <span className="font-bold">Drawing :</span>{order.note}
+              <span className="font-bold">Notes / </span>
+              <span className="font-bold">Drawing : </span>{order.note}
             </div>
           )}
         </div>
