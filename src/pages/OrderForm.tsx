@@ -134,7 +134,7 @@ const OrderForm: React.FC = () => {
     const formattedOrderNumber = orderNumber.toString().padStart(5, '0');
     
     return (
-      <div className="form-copy" style={{ height: '45vh', pageBreakAfter: copyNumber % 2 === 0 ? 'always' : 'auto', pageBreakInside: 'avoid' }}>
+      <div className="form-copy" style={{ height: '40vh', pageBreakAfter: copyNumber % 2 === 0 ? 'always' : 'auto', pageBreakInside: 'avoid' }}>
         <div className="border-2 p-3 h-full" style={{ 
           fontFamily: 'Arial, sans-serif', 
           fontSize: '9px',
