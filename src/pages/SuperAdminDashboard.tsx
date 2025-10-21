@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Navigate, useNavigate } from 'react-router-dom';
 import OrderDetailsTable from '@/components/OrderDetailsTable';
 import UserManagement from '@/components/UserManagement';
+import SystemUserManagement from '@/components/SystemUserManagement';
 import { getFactoryPrice, calculateOrderProfit } from '@/types/order';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -678,35 +679,38 @@ const SuperAdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <UserManagement />
+            <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <UserManagement />
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Instructions</CardTitle>
+                    <CardDescription>
+                      Important information about user management
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Admin Users:</strong> Can view all orders, manage the system, and access the admin dashboard.
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        <strong>Delivery Users:</strong> Can view assigned orders and update delivery status.
+                      </p>
+                    </div>
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        <strong>Note:</strong> New users will receive an email verification link. They can log in at the main login page.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
               
-              {/* Future: User List Component can be added here */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Instructions</CardTitle>
-                  <CardDescription>
-                    Important information about user management
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      <strong>Admin Users:</strong> Can view all orders, manage the system, and access the admin dashboard.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      <strong>Delivery Users:</strong> Can view assigned orders and update delivery status.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
-                    <p className="text-sm text-amber-700 dark:text-amber-300">
-                      <strong>Note:</strong> New users will receive an email verification link. They can log in at the main login page.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <SystemUserManagement />
             </div>
           </TabsContent>
         </Tabs>

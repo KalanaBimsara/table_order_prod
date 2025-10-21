@@ -130,7 +130,7 @@ const createEmptyTable = (): TableItem => ({
   price: 11000,  // Updated default price for 24x32 table
   legSize: '1.5x1.5',
   legHeight: '30',
-  wireHoles: 'none',
+  wireHoles: 'normal',
   wireHolesComment: '',
   frontPanelSize: undefined,
   frontPanelLength: undefined
@@ -347,7 +347,7 @@ function useFormProvider() {
           price: 11000,  // Updated default price
           legSize: '1.5x1.5',
           legHeight: '30',
-          wireHoles: 'none',
+          wireHoles: 'normal',
           wireHolesComment: '',
           frontPanelSize: undefined,
           frontPanelLength: undefined
