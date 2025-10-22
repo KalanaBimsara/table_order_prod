@@ -20,6 +20,7 @@ import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-f
 // Define the types for the Supabase responses
 type OrderResponse = {
   id: string;
+  order_form_number: string;
   customer_name: string;
   address: string;
   contact_number: string;

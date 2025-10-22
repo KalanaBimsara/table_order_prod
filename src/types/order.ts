@@ -24,6 +24,7 @@ export type DeliveryStatus = 'pending' | 'ready';
 
 export type Order = {
   id: string,
+  order_form_number?: string,
   customerName: string,
   address: string,
   contactNumber: string,
@@ -102,23 +103,23 @@ export const colourOptions = [
 // Factory price mapping based on the provided chart
 export const factoryPriceMap: Record<string, number> = {
   // Standard sizes
-  '24x32': 7750,
-  '24x36': 8250,
-  '24x48': 8750,
-  '24x60': 10750,
-  '24x72': 14750,
-  '24x84': 17250,
-  '24x96': 17250,
+  '24x32': 8250,
+  '24x36': 8750,
+  '24x48': 9250,
+  '24x60': 11250,
+  '24x72': 15250,
+  '24x84': 18500,
+  '24x96': 18500,
   
   // Medium sizes
-  '30x48': 17250,
-  '36x48': 17250,
-  '48x48': 17250,
+  '30x48': 18500,
+  '36x48': 18500,
+  '48x48': 18500,
   
   // Large sizes
-  '30x60': 21250,
-  '36x60': 21250,
-  '48x60': 21250,
+  '30x60': 22500,
+  '36x60': 22500,
+  '48x60': 22500,
   
   // Extra large sizes
   '30x72': 29250,
@@ -126,26 +127,26 @@ export const factoryPriceMap: Record<string, number> = {
   '48x72': 29250,
   
   // Jumbo sizes
-  '30x84': 34250,
-  '36x84': 34250,
-  '48x84': 34250,
-  '30x96': 34250,
-  '36x96': 34250,
-  '48x96': 34250,
+  '30x84': 37000,
+  '36x84': 37000,
+  '48x84': 37000,
+  '30x96': 37000,
+  '36x96': 37000,
+  '48x96': 37000,
 
   //dinning table
   '36x36': 9500,
   '60x36': 11500,
   
   // L-Shaped tables
-  'l-A': 21500,
-  'l-B': 22500,
-  'l-C': 22500,
-  'l-D': 24500,
-  'l-E': 23500,
-  'l-F': 24500,
-  'l-G': 24500,
-  'l-H': 26500
+  'l-A': 17500,
+  'l-B': 18000,
+  'l-C': 18500,
+  'l-D': 20500,
+  'l-E': 19500,
+  'l-F': 20000,
+  'l-G': 20500,
+  'l-H': 22500
 };
 
 // Helper function to get factory price for a table size

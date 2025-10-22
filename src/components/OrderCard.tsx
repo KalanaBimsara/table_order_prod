@@ -179,9 +179,20 @@ const OrderCard: React.FC<OrderCardProps> = ({
   };
   return <Card className={`order-card ${order.status === 'pending' ? 'order-pending' : order.status === 'assigned' ? 'order-assigned' : 'order-completed'} ${isMobile ? 'text-base' : 'text-lg'}`}>
       <CardContent className="pt-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4">
-          <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>{order.customerName}</h3>
-          {getStatusBadge()}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 relative">
+          <h3 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
+            {order.customerName}
+          </h3>
+        
+          <div className="flex flex-col sm:items-end gap-1">
+            {/* Order number top-right */}
+            {order.order_form_number && (
+              <span className="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full shadow-sm">
+                #{order.order_form_number}
+              </span>
+            )}
+            {getStatusBadge()}
+          </div>
         </div>
 
         <div className="space-y-3 text-sm sm:text-base">
