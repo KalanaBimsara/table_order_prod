@@ -246,6 +246,38 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             )}
           />
 
+          {/* Leg Shape */}
+          <FormField
+            control={form.control}
+            name={`tables.${index}.legShape`}
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>Leg Shape</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="O Shape" id={`leg-shape-o-${index}`} />
+                      <label htmlFor={`leg-shape-o-${index}`} className="text-sm font-normal cursor-pointer">
+                        O Shape legs
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="U shape" id={`leg-shape-u-${index}`} />
+                      <label htmlFor={`leg-shape-u-${index}`} className="text-sm font-normal cursor-pointer">
+                        U shape legs
+                      </label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Leg Height */}
           <FormField
             control={form.control}

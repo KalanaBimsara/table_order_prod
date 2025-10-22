@@ -26,6 +26,7 @@ const tableItemSchema = z.object({
   price: z.number(),
   // Customization fields
   legSize: z.enum(['1.5x1.5', '3x1.5']).optional(),
+  legShape: z.enum(['O Shape', 'U shape']).optional(),
   legHeight: z.string().optional(),
   wireHoles: z.enum(['none', 'normal', 'special']).optional(),
   wireHolesComment: z.string().optional(),
@@ -38,6 +39,7 @@ const formSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters" }),
   address: z.string().min(5, { message: "Please enter a valid address" }),
   contactNumber: z.string().min(10, { message: "Please enter a valid phone number" }),
+  deliveryDate: z.string().optional(),
   tables: z.array(tableItemSchema).min(1, { message: "At least one table is required" }),
   note: z.string().optional(),
   deliveryFee: z.number().nonnegative().optional().default(0),
@@ -81,6 +83,7 @@ export function NewOrderForm() {
         customerName: values.customerName,
         address: values.address,
         contactNumber: values.contactNumber,
+        deliveryDate: values.deliveryDate,
         tables: values.tables.map((table): TableItem => ({
           id: table.id,
           size: table.size,
@@ -90,6 +93,7 @@ export function NewOrderForm() {
           quantity: table.quantity,
           price: table.price,
           legSize: table.legSize,
+          legShape: table.legShape,
           legHeight: table.legHeight,
           wireHoles: table.wireHoles,
           wireHolesComment: table.wireHolesComment,
@@ -107,6 +111,7 @@ export function NewOrderForm() {
         customerName: "",
         address: "",
         contactNumber: "",
+        deliveryDate: "",
         tables: [createEmptyTable()],
         note: "",
         deliveryFee: 0,
@@ -129,6 +134,7 @@ const createEmptyTable = (): TableItem => ({
   quantity: 1,
   price: 11000,  // Updated default price for 24x32 table
   legSize: '1.5x1.5',
+  legShape: 'O Shape',
   legHeight: '30',
   wireHoles: 'normal',
   wireHolesComment: '',
@@ -208,6 +214,20 @@ const createEmptyTable = (): TableItem => ({
                   <FormLabel>Contact Number</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="deliveryDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Delivery Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -336,6 +356,7 @@ function useFormProvider() {
       customerName: "",
       address: "",
       contactNumber: "",
+      deliveryDate: "",
       tables: [
         {
           id: uuidv4(),
@@ -346,6 +367,7 @@ function useFormProvider() {
           quantity: 1,
           price: 11000,  // Updated default price
           legSize: '1.5x1.5',
+          legShape: 'O Shape',
           legHeight: '30',
           wireHoles: 'normal',
           wireHolesComment: '',

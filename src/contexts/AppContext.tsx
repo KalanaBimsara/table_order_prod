@@ -126,6 +126,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           price: table.price,
           // Customization fields
           legSize: (table as any).leg_size || undefined,
+          legShape: (table as any).leg_shape || undefined,
           legHeight: (table as any).leg_height || undefined,
           wireHoles: (table as any).wire_holes || undefined,
           wireHolesComment: (table as any).wire_holes_comment || undefined,
@@ -151,7 +152,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalPrice: order.price,
         deliveryFee: order.delivery_fee || 0,
         additionalCharges: order.additional_charges || 0,
-        salesPersonName: order.sales_person_name
+        salesPersonName: order.sales_person_name,
+        deliveryDate: order.delivery_date || undefined,
+        orderFormNumber: order.order_form_number || undefined
       }));
 
       // Sort orders by creation date (latest first)
@@ -183,6 +186,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .eq('id', user?.id)
         .single();
 
+      // Generate 6-digit order form number
+      const orderFormNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -198,7 +204,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quantity: orderData.tables.reduce((sum, table) => sum + table.quantity, 0),
           delivery_fee: orderData.deliveryFee || 0,
           additional_charges: orderData.additionalCharges || 0,
-          sales_person_name: profileData?.name || null
+          sales_person_name: profileData?.name || null,
+          delivery_date: (orderData as any).deliveryDate || null,
+          order_form_number: orderFormNumber
         })
         .select('id')
         .single();
@@ -219,6 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quantity: table.quantity,
           price: table.price,
           leg_size: table.legSize ?? null,
+          leg_shape: table.legShape ?? null,
           leg_height: table.legHeight ?? null,
           wire_holes: table.wireHoles ?? null,
           wire_holes_comment: table.wireHolesComment ?? null,
@@ -345,6 +354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quantity: orderData.tables.reduce((sum, table) => sum + table.quantity, 0),
           delivery_fee: orderData.deliveryFee || 0,
           additional_charges: orderData.additionalCharges || 0,
+          delivery_date: (orderData as any).deliveryDate || null,
         })
         .eq('id', orderId);
 
@@ -377,6 +387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quantity: table.quantity,
           price: table.price,
           leg_size: table.legSize ?? null,
+          leg_shape: table.legShape ?? null,
           leg_height: table.legHeight ?? null,
           wire_holes: table.wireHoles ?? null,
           wire_holes_comment: table.wireHolesComment ?? null,
