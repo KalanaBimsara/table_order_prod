@@ -181,7 +181,7 @@ const createEmptyTable = (): TableItem => ({
                 <FormItem>
                   <FormLabel>Customer Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Smith" {...field} />
+                    <Input placeholder="Jhon Smith" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -213,7 +213,7 @@ const createEmptyTable = (): TableItem => ({
                 <FormItem>
                   <FormLabel>Contact Number</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                    <Input type="tel" placeholder="(07x) xxx-xxxx" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

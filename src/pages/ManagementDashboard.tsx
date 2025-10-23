@@ -31,6 +31,7 @@ const ManagementDashboard: React.FC = () => {
 
       const formattedOrders = data?.map(order => ({
         id: order.id,
+        orderFormNumber: order.order_form_number || 'N/A',
         customerName: order.customer_name,
         address: order.address,
         contactNumber: order.contact_number,
@@ -93,6 +94,7 @@ const ManagementDashboard: React.FC = () => {
 
       const formattedOrders = data?.map(order => ({
         id: order.id,
+        orderFormNumber: order.order_form_number || 'N/A',
         customerName: order.customer_name,
         address: order.address,
         contactNumber: order.contact_number,
@@ -322,7 +324,7 @@ const ManagementDashboard: React.FC = () => {
                   <div>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Package size={18} />
-                      Order #{order.id.slice(-8)}
+                      Order # {order.orderFormNumber}
                       {order.deliveryStatus === 'ready' && (
                         <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 flex items-center gap-1">
                           <CheckCircle2 size={12} />

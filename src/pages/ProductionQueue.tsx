@@ -64,6 +64,7 @@ const ProductionQueue = () => {
 
           return {
             id: order.id,
+            orderFormNumber: order.order_form_number || 'N/A',
             customerName: order.customer_name,
             address: order.address,
             contactNumber: order.contact_number,
@@ -150,7 +151,7 @@ const ProductionQueue = () => {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        #{index + 1}
+                        #{order.orderFormNumber}
                       </Badge>
                       Production Order
                     </CardTitle>
@@ -179,7 +180,7 @@ const ProductionQueue = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div>
                     <p className="text-xs text-muted-foreground">Order Number</p>
-                    <p className="font-medium">#{order.id.slice(-8).toUpperCase()}</p>
+                    <p className="font-medium">#{order.orderFormNumber}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Customer Name</p>

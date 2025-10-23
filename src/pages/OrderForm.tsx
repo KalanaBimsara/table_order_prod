@@ -124,10 +124,10 @@ const OrderForm: React.FC = () => {
 
   const FormCopy = ({ copyNumber, colorName, copyLabel }: { copyNumber: number; colorName: 'cyan' | 'magenta' | 'yellow' | 'black'; copyLabel: string }) => {
     const colorStyles = {
-      cyan: { bg: '#E0F7FA', border: '#00ACC1', text: '#00FFFF' },
-      magenta: { bg: '#FCE4EC', border: '#C2185B', text: '#FF00FF' },
-      yellow: { bg: '#FFF9C4', border: '#F57F17', text: '#FFFF00' },
-      black: { bg: '#F5F5F5', border: '#212121', text: '#000000' }
+      cyan: { bg: '#E0F7FA', border: '#00ACC1', text: '#00ACC1' },
+      magenta: { bg: '#FCE4EC', border: '#C2185B', text: '#C2185B' },
+      yellow: { bg: '#dafcdfff', border: '#00d636ff', text: '#00ff00ff' },
+      black: { bg: '#F5F5F5', border: '#000000', text: '#000000' }
     };
     
     const colors = colorStyles[colorName];
@@ -137,14 +137,13 @@ const OrderForm: React.FC = () => {
       <div className="form-copy" style={{ height: '50vh', pageBreakAfter: copyNumber % 2 === 0 ? 'always' : 'auto', pageBreakInside: 'avoid' }}>
         <div className="p-3 h-full" style={{ 
           fontFamily: 'Arial, sans-serif', 
-          fontSize: '9px',
+          fontSize: '11px',
           backgroundColor: colors.bg,
           color: colors.text
         }}>
           {/* Header - Condensed */}
           <div className="flex justify-between items-start mb-2">
             <div>
-              <div className="text-xs font-bold">{formattedOrderNumber}</div>
               <div className="text-xs font-bold mt-1" style={{ color: colors.text }}>{copyLabel}</div>
             </div>
 
@@ -154,18 +153,18 @@ const OrderForm: React.FC = () => {
             </div>
 
             <div className="text-right text-xs">
-              <div className="font-bold">ORDER FORM</div>
+              <div className="font-bold">ORDER NO: {formattedOrderNumber}</div>
               <div>Del. Date: {order.deliveryDate || '______'}</div>
             </div>
           </div>
 
           {/* Customer Information - Condensed */}
-          <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+          <div className="grid grid-cols-2 gap-2 mb-2" style={{ fontSize: '12px' }}>
             <div><span className="font-medium">Page:</span> {order.salesPersonName || '______'}</div>
             <div><span className="font-medium">Page Contact:</span> {salesPersonContact || '______'}</div>
           </div>
 
-          <div className="mb-2 text-xs">
+          <div className="mb-2" style={{ fontSize: '12px' }}>
             <div><span className="font-medium">Customer:</span> {order.customerName} | <span className="font-medium">Tel:</span> {order.contactNumber}</div>
             <div><span className="font-medium">Address:</span> {order.address}</div>
             <div><span className="font-medium">Assembly:</span> {editableDetails.assemblingType || '______'}</div>
@@ -173,7 +172,7 @@ const OrderForm: React.FC = () => {
 
           {/* Order Table - Condensed Single Row */}
           <div className="border mb-2" style={{ borderColor: colors.border }}>
-            <table className="w-full text-xs">
+            <table className="w-full" style={{ fontSize: '11px' }}>
               <thead>
                 <tr className="border-b" style={{ borderColor: colors.border }}>
                   <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Size</th>
@@ -246,6 +245,7 @@ const OrderForm: React.FC = () => {
       <style>{`
         @media print {
           .no-print { display: none !important; }
+          header { display: none !important; }
           body { margin: 0; padding: 0; }
           .container { max-width: 100% !important; padding: 0 !important; }
           @page { size: A4; margin: 0; }
@@ -286,10 +286,10 @@ const OrderForm: React.FC = () => {
 
       {/* Forms Container - 4 copies in different colors, 2 per page */}
       <div className="container py-8 space-y-2">
-        <FormCopy copyNumber={1} colorName="cyan" copyLabel="PRODUCTION COPY" />
+        <FormCopy copyNumber={1} colorName="cyan" copyLabel="TRANSPORT COPY" />
         <FormCopy copyNumber={2} colorName="magenta" copyLabel="ACCOUNT COPY" />
         <FormCopy copyNumber={3} colorName="yellow" copyLabel="GATE PASS" />
-        <FormCopy copyNumber={4} colorName="black" copyLabel="CUSTOMER COPY" />
+        <FormCopy copyNumber={4} colorName="black" copyLabel="PRODUCTION COPY" />
       </div>
     </div>
   );
