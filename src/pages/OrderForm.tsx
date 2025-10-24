@@ -154,7 +154,8 @@ const OrderForm: React.FC = () => {
 
             <div className="text-right text-xs">
               <div className="font-bold">ORDER NO: {formattedOrderNumber}</div>
-              <div>Del. Date: {order.deliveryDate || '______'}</div>
+              <div>Delivery Date: {order.deliveryDate || '______'}</div>
+              <div>Ordered Date:{' '}{order.createdAt? new Date(order.createdAt).toLocaleDateString('en-GB'): '______'}</div>
             </div>
           </div>
 
