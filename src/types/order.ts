@@ -83,14 +83,14 @@ export const tableSizeOptions = [
   { value: '60x36', label: '60x36 Dinning', price: 16500 },
 
   // L-Shaped Tables - increased by 1000
-  { value: 'l-A', label: 'L-Shaped Table (Size A)', price: 22000 },
-  { value: 'l-B', label: 'L-Shaped Table (Size B)', price: 23000 },
-  { value: 'l-C', label: 'L-Shaped Table (Size C)', price: 23000 },
-  { value: 'l-D', label: 'L-Shaped Table (Size D)', price: 25000 },
-  { value: 'l-E', label: 'L-Shaped Table (Size E)', price: 24000 },
-  { value: 'l-F', label: 'L-Shaped Table (Size F)', price: 25000 },
-  { value: 'l-G', label: 'L-Shaped Table (Size G)', price: 25000 },
-  { value: 'l-H', label: 'L-Shaped Table (Size H)', price: 27000 }
+  { value: 'l-A', label: 'L-Shaped Table (Size A)', price: 23000 },
+  { value: 'l-B', label: 'L-Shaped Table (Size B)', price: 24000 },
+  { value: 'l-C', label: 'L-Shaped Table (Size C)', price: 24000 },
+  { value: 'l-D', label: 'L-Shaped Table (Size D)', price: 26000 },
+  { value: 'l-E', label: 'L-Shaped Table (Size E)', price: 25000 },
+  { value: 'l-F', label: 'L-Shaped Table (Size F)', price: 26000 },
+  { value: 'l-G', label: 'L-Shaped Table (Size G)', price: 26000 },
+  { value: 'l-H', label: 'L-Shaped Table (Size H)', price: 28000 }
 ];
 
 export const colourOptions = [
@@ -139,14 +139,14 @@ export const factoryPriceMap: Record<string, number> = {
   '60x36': 11500,
   
   // L-Shaped tables
-  'l-A': 17500,
-  'l-B': 18000,
-  'l-C': 18500,
-  'l-D': 20500,
-  'l-E': 19500,
-  'l-F': 20000,
-  'l-G': 20500,
-  'l-H': 22500
+  'l-A': 18500,
+  'l-B': 19000,
+  'l-C': 19500,
+  'l-D': 21500,
+  'l-E': 20500,
+  'l-F': 21000,
+  'l-G': 21500,
+  'l-H': 23500
 };
 
 // Helper function to get factory price for a table size

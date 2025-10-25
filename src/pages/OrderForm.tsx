@@ -127,11 +127,13 @@ const OrderForm: React.FC = () => {
       colorName,
       copyLabel,
       singleTable,
+      tableIndex
     }: {
       copyNumber: number;
       colorName: 'cyan' | 'magenta' | 'yellow' | 'black';
       copyLabel: string;
       singleTable: any;
+      tableIndex: number;
     }) => {
     const colorStyles = {
       cyan: { bg: '#E0F7FA', border: '#00ACC1', text: '#00ACC1' },
@@ -144,7 +146,7 @@ const OrderForm: React.FC = () => {
     const formattedOrderNumber = order.orderFormNumber || '000000';
     
     return (
-      <div className="form-copy" style={{ height: '50vh', pageBreakAfter: copyNumber % 2 === 0 ? 'always' : 'auto', pageBreakInside: 'avoid' }}>
+      <div className="form-copy" style={{ height: '50vh', pageBreakAfter:!(tableIndex === order.tables.length - 1 && copyNumber === 4)? 'always': 'auto', pageBreakInside: 'avoid' }}>
         <div className="p-3 h-full" style={{ 
           fontFamily: 'Arial, sans-serif', 
           fontSize: '11px',
@@ -238,12 +240,20 @@ const OrderForm: React.FC = () => {
               <div className="border-b mt-3" style={{ borderColor: colors.border }}>&nbsp;</div>
             </div>
           </div>
-          {order.note && (
-            <div className="mt-2 pt-2 border-t text-xs" style={{ borderColor: colors.border }}>
-              <span className="font-bold">Notes / </span>
-              <span className="font-bold">Drawing :</span>{order.note}
-            </div>
-          )}
+          <div className="mt-2 pt-2 border-t text-xs space-y-1" style={{ borderColor: colors.border }}>
+            {order.note && (
+              <div>
+                <span className="font-bold">Notes / Drawing: </span>
+                {order.note}
+              </div>
+            )}
+            {singleTable.wireHolesComment && (
+              <div>
+                <span className="font-bold">Wire Hole Comment: </span>
+                {singleTable.wireHolesComment}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -297,30 +307,10 @@ const OrderForm: React.FC = () => {
       <div className="container py-8 space-y-8">
         {order.tables.map((table, tableIndex) => (
           <React.Fragment key={tableIndex}>
-            <FormCopy
-              copyNumber={1}
-              colorName="cyan"
-              copyLabel={`TRANSPORT COPY`}
-              singleTable={table}
-            />
-            <FormCopy
-              copyNumber={2}
-              colorName="magenta"
-              copyLabel={`ACCOUNT COPY`}
-              singleTable={table}
-            />
-            <FormCopy
-              copyNumber={3}
-              colorName="yellow"
-              copyLabel={`GATE PASS`}
-              singleTable={table}
-            />
-            <FormCopy
-              copyNumber={4}
-              colorName="black"
-              copyLabel={`PRODUCTION COPY`}
-              singleTable={table}
-            />
+            <FormCopy copyNumber={1} colorName="cyan" copyLabel="TRANSPORT COPY" singleTable={table} tableIndex={tableIndex} />
+            <FormCopy copyNumber={2} colorName="magenta" copyLabel="ACCOUNT COPY" singleTable={table} tableIndex={tableIndex} />
+            <FormCopy copyNumber={3} colorName="yellow" copyLabel="GATE PASS" singleTable={table} tableIndex={tableIndex} />
+            <FormCopy copyNumber={4} colorName="black" copyLabel="PRODUCTION COPY" singleTable={table} tableIndex={tableIndex} />
           </React.Fragment>
         ))}
       </div>
