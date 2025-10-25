@@ -32,7 +32,9 @@ const businessNames = [
   "Table LK",
   "Maduwa Furniture",
   "Smart Desk Lanka",
-  "Bisora Furniture"
+  "Bisora Furniture",
+  "Dream Furniture",
+  "Moosika LK"
 ];
 
 const CreateQuotationDialog: React.FC<CreateQuotationDialogProps> = ({

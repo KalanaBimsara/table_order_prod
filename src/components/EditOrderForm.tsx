@@ -42,7 +42,7 @@ const formSchema = z.object({
   tables: z.array(tableItemSchema).min(1, { message: "At least one table is required" }),
   note: z.string().optional(),
   deliveryFee: z.number().nonnegative().optional().default(0),
-  additionalCharges: z.number().nonnegative().optional().default(0),
+  additionalCharges: z.number().optional().default(0),
 });
 
 type OrderFormValues = z.infer<typeof formSchema>;

@@ -38,14 +38,20 @@ const businessData = {
     phone: "+94 71 148 2882",
     email: "info@bisorafurniture.lk",
     address: "Gammanpila, Bandaragama"
+  },
+  "Dream Furniture": {
+    phone: "078 2384010",
+    email: "info@dreamfurniture.lk",
+    address: "Gammanpila, Bandaragama"
+  },
+  "Moosika LK": {
+    phone: "074 4102829",
+    email: "info@moosika.lk",
+    address: "Gammanpila, Bandaragama"
   }
 };
 
-const defaultTermsAndConditions = `Bank Payment Details:
-Account Name: Kalana Bimsara
-Account Number: 088200282888912
-Bank: People's Bank
-Branch: Ratnapura Branch
+const defaultTermsAndConditions = `
 Note: After making the payment, kindly share the payment slip via WhatsApp or email for verification. Production will begin once payment is confirmed.
 
 Advance Payment:
