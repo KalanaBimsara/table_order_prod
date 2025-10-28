@@ -49,8 +49,8 @@ export const tableSizeOptions = [
   // Standard Tables - increased by 500 except 24x48 and 24x60
   { value: '24x32', label: '24x32 Table', price: 11000 },
   { value: '24x36', label: '24x36 Table', price: 12000 },
-  { value: '24x48', label: '24x48 Table', price: 13500 }, // kept original price
-  { value: '24x60', label: '24x60 Table', price: 15000 }, // kept original price
+  { value: '24x48', label: '24x48 Table', price: 13500 }, 
+  { value: '24x60', label: '24x60 Table', price: 15000 }, 
   { value: '24x72', label: '24x72 Table', price: 20000 },
   { value: '24x84', label: '24x84 Table', price: 22500 },
   { value: '24x96', label: '24x96 Table', price: 22500 },
@@ -79,18 +79,18 @@ export const tableSizeOptions = [
   { value: '48x96', label: '48x96 Table', price: 39500 },
 
   // Dining Tables
-  { value: '36x36', label: '36x36 Dinning', price: 14500 },
-  { value: '60x36', label: '60x36 Dinning', price: 16500 },
+  { value: 'DS (36x36)', label: '36x36 Dinning', price: 14500 },
+  { value: 'DL (60x36)', label: '60x36 Dinning', price: 16500 },
 
   // L-Shaped Tables - increased by 1000
-  { value: 'l-A', label: 'L-Shaped Table (Size A)', price: 23000 },
-  { value: 'l-B', label: 'L-Shaped Table (Size B)', price: 24000 },
-  { value: 'l-C', label: 'L-Shaped Table (Size C)', price: 24000 },
-  { value: 'l-D', label: 'L-Shaped Table (Size D)', price: 26000 },
-  { value: 'l-E', label: 'L-Shaped Table (Size E)', price: 25000 },
-  { value: 'l-F', label: 'L-Shaped Table (Size F)', price: 26000 },
-  { value: 'l-G', label: 'L-Shaped Table (Size G)', price: 26000 },
-  { value: 'l-H', label: 'L-Shaped Table (Size H)', price: 28000 }
+  { value: 'L-A', label: 'L-Shaped Table (Size A)', price: 23000 },
+  { value: 'L-B', label: 'L-Shaped Table (Size B)', price: 24000 },
+  { value: 'L-C', label: 'L-Shaped Table (Size C)', price: 24000 },
+  { value: 'L-D', label: 'L-Shaped Table (Size D)', price: 26000 },
+  { value: 'L-E', label: 'L-Shaped Table (Size E)', price: 25000 },
+  { value: 'L-F', label: 'L-Shaped Table (Size F)', price: 26000 },
+  { value: 'L-G', label: 'L-Shaped Table (Size G)', price: 26000 },
+  { value: 'L-H', label: 'L-Shaped Table (Size H)', price: 28000 }
 ];
 
 export const colourOptions = [
