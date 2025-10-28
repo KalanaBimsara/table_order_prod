@@ -10,7 +10,7 @@ export type TableItem = {
   legSize?: '1.5x1.5' | '3x1.5',
   legShape?: 'O Shape' | 'U shape',
   legHeight?: string,
-  wireHoles?: 'none' | 'normal' | 'special',
+  wireHoles?: 'no wire holes' | 'normal' | 'special',
   wireHolesComment?: string,
   frontPanelSize?: '6' | '12' | '16' | '24',
   frontPanelLength?: number

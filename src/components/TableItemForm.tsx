@@ -54,7 +54,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   };
 
   const handleCustomSizeSubmit = () => {
-    if (customSize && customPrice) {
+    if (/^\d+\s*x\s*\d+$/.test(customSize) && customPrice) {
       form.setValue(`tables.${index}.size`, customSize);
       form.setValue(`tables.${index}.price`, parseFloat(customPrice));
     }
@@ -105,9 +105,24 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             <div className="space-y-2">
               <FormLabel>Custom Size</FormLabel>
               <Input
-                placeholder="e.g., 30x40"
+                placeholder="e.g., 48x24"
                 value={customSize}
-                onChange={(e) => setCustomSize(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow only numbers, 'x', and spaces — e.g., 48 x 24
+                  const validPattern = /^[0-9\s]*x?[0-9\s]*$/i;
+
+                  if (validPattern.test(value)) {
+                    setCustomSize(value);
+                  }
+                }}
+                onBlur={() => {
+                  // Auto-trim and normalize spaces around 'x'
+                  if (customSize) {
+                    const cleaned = customSize.replace(/\s*/g, '').replace(/x/i, ' x ');
+                    setCustomSize(cleaned);
+                  }
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -310,7 +325,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                     className="flex flex-col space-y-2"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id={`wire-holes-none-${index}`} />
+                      <RadioGroupItem value="no wire holes" id={`wire-holes-none-${index}`} />
                       <label htmlFor={`wire-holes-none-${index}`} className="text-sm font-normal cursor-pointer">
                         No wire holes
                       </label>

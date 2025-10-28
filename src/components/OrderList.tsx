@@ -161,73 +161,53 @@ export function OrderList() {
     }
   }, [userRole, user]);
 
+  // Optimized: fetchReadyOrders
   const fetchReadyOrders = async () => {
     try {
-      // Fetch orders that are ready for delivery but not yet assigned
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData, error } = await supabase
         .from('orders')
-        .select('*, order_form_number')
+        .select(`
+          id, order_form_number, customer_name, address, contact_number,
+          table_size, colour, quantity, price, note, status, created_at,
+          completed_at, delivery_person_id, sales_person_name
+        `)
         .eq('status', 'pending')
         .eq('delivery_status', 'ready')
         .order('created_at', { ascending: false });
 
-      if (ordersError) {
-        console.error('Error fetching ready orders:', ordersError);
-        toast.error('Failed to fetch ready orders');
-        return;
-      }
+      if (error) throw error;
+      if (!ordersData?.length) return setReadyOrders([]);
 
-      if (!ordersData || ordersData.length === 0) {
-        setReadyOrders([]);
-        return;
-      }
+      const orderIds = ordersData.map(o => o.id);
 
-      // Extract order IDs to fetch related table data
-      const orderIds = (ordersData as any[]).map(order => order.id);
+      const [{ data: tablesData, error: tablesError }] = await Promise.all([
+        supabase.from('order_tables').select('*').in('order_id', orderIds)
+      ]);
+      if (tablesError) throw tablesError;
 
-      // Fetch the order_tables data for these orders
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('*')
-        .in('order_id', orderIds);
+      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
 
-      if (tablesError) {
-        console.error('Error fetching order tables:', tablesError);
-        toast.error('Failed to fetch table details');
-        return;
-      }
-
-      // Group tables by order_id
-      const tablesByOrder = (tablesData || []).reduce((acc, table) => {
-        if (!acc[table.order_id]) {
-          acc[table.order_id] = [];
-        }
-        acc[table.order_id].push({
-          id: table.id,
-          size: table.size,
-          colour: table.colour,
-          topColour: table.top_colour || table.colour,
-          frameColour: table.frame_colour || table.colour,
-          quantity: table.quantity,
-          price: table.price
-        });
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      // Transform the data to match the Order type structure
-      const formattedOrders = (ordersData as unknown as OrderResponse[]).map(order => ({
+      const formatted = ordersData.map(order => ({
         id: order.id,
         customerName: order.customer_name,
         address: order.address,
         contactNumber: order.contact_number,
-        tables: tablesByOrder[order.id] || [{
+        tables: tablesByOrder[order.id]?.map(t => ({
+          id: t.id,
+          size: t.size,
+          colour: t.colour,
+          topColour: t.top_colour || t.colour,
+          frameColour: t.frame_colour || t.colour,
+          quantity: t.quantity,
+          price: t.price,
+        })) || [{
           id: order.id,
           size: order.table_size,
           colour: order.colour,
           topColour: order.colour,
           frameColour: order.colour,
           quantity: order.quantity,
-          price: order.price / order.quantity
+          price: order.price / order.quantity,
         }],
         note: order.note,
         status: order.status as OrderStatus,
@@ -236,84 +216,64 @@ export function OrderList() {
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
         salesPersonName: order.sales_person_name,
-        deliveryStatus: 'ready' as const
+        deliveryStatus: 'ready',
       }));
 
-      setReadyOrders(formattedOrders);
-    } catch (error) {
-      console.error('Error processing ready orders:', error);
-      toast.error('An error occurred while fetching ready orders');
+      setReadyOrders(formatted);
+    } catch (err) {
+      console.error('Fetch ready orders failed:', err);
+      toast.error('Failed to fetch ready orders');
     }
   };
 
+  // Optimized: fetchAvailableOrders
   const fetchAvailableOrders = async () => {
     try {
-      // First, fetch the pending orders that are NOT ready for delivery, ordered by creation date (latest first)
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData, error } = await supabase
         .from('orders')
-        .select('*, order_form_number')
+        .select(`
+          id, order_form_number, customer_name, address, contact_number,
+          table_size, colour, quantity, price, note, status, created_at,
+          completed_at, delivery_person_id, sales_person_name
+        `)
         .eq('status', 'pending')
         .neq('delivery_status', 'ready')
         .order('created_at', { ascending: false });
 
-      if (ordersError) {
-        console.error('Error fetching available orders:', ordersError);
-        toast.error('Failed to fetch available orders');
-        return;
-      }
+      if (error) throw error;
+      if (!ordersData?.length) return setAvailableOrders([]);
 
-      if (!ordersData || ordersData.length === 0) {
-        setAvailableOrders([]);
-        return;
-      }
+      const orderIds = ordersData.map(o => o.id);
 
-      // Extract order IDs to fetch related table data
-      const orderIds = (ordersData as any[]).map(order => order.id);
+      // Fetch related table data in parallel
+      const [{ data: tablesData, error: tablesError }] = await Promise.all([
+        supabase.from('order_tables').select('*').in('order_id', orderIds)
+      ]);
+      if (tablesError) throw tablesError;
 
-      // Fetch the order_tables data for these orders
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('*')
-        .in('order_id', orderIds);
+      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
 
-      if (tablesError) {
-        console.error('Error fetching order tables:', tablesError);
-        toast.error('Failed to fetch table details');
-        return;
-      }
-
-      // Group tables by order_id
-      const tablesByOrder = (tablesData || []).reduce((acc, table) => {
-        if (!acc[table.order_id]) {
-          acc[table.order_id] = [];
-        }
-        acc[table.order_id].push({
-          id: table.id,
-          size: table.size,
-          colour: table.colour,
-          topColour: table.top_colour || table.colour,
-          frameColour: table.frame_colour || table.colour,
-          quantity: table.quantity,
-          price: table.price
-        });
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      // Transform the data to match the Order type structure with the correct color properties
-      const formattedOrders = (ordersData as unknown as OrderResponse[]).map(order => ({
+      const formatted = ordersData.map(order => ({
         id: order.id,
         customerName: order.customer_name,
         address: order.address,
         contactNumber: order.contact_number,
-        // Use tables data if available, otherwise create a fallback
-        tables: tablesByOrder[order.id] || [{
+        tables: tablesByOrder[order.id]?.map(t => ({
+          id: t.id,
+          size: t.size,
+          colour: t.colour,
+          topColour: t.top_colour || t.colour,
+          frameColour: t.frame_colour || t.colour,
+          quantity: t.quantity,
+          price: t.price,
+        })) || [{
           id: order.id,
           size: order.table_size,
           colour: order.colour,
           topColour: order.colour,
           frameColour: order.colour,
           quantity: order.quantity,
-          price: order.price / order.quantity
+          price: order.price / order.quantity,
         }],
         note: order.note,
         status: order.status as OrderStatus,
@@ -321,95 +281,64 @@ export function OrderList() {
         completedAt: order.completed_at ? new Date(order.completed_at) : undefined,
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
-        salesPersonName: order.sales_person_name  // Include sales person name
+        salesPersonName: order.sales_person_name,
       }));
 
-      // Sort by creation date (latest first) - already sorted by query but ensuring consistency
-      const sortedOrders = formattedOrders.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-      setAvailableOrders(sortedOrders);
-    } catch (error) {
-      console.error('Error processing available orders:', error);
-      toast.error('An error occurred while fetching orders');
+      setAvailableOrders(formatted);
+    } catch (err) {
+      console.error('Fetch available orders failed:', err);
+      toast.error('Failed to fetch available orders');
     }
   };
 
+  // Optimized: fetchDeliveryCompletedOrders
   const fetchDeliveryCompletedOrders = async () => {
     if (!user) return;
-
     try {
-      console.log('Fetching completed orders for delivery person:', user.id);
-      
-      // Fetch completed orders for this delivery person ordered by completed_at (latest first)
-      const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData, error } = await supabase
         .from('orders')
-        .select('*, order_form_number')
+        .select(`
+          id, order_form_number, customer_name, address, contact_number,
+          table_size, colour, quantity, price, note, status, created_at,
+          completed_at, delivery_person_id, sales_person_name
+        `)
         .eq('status', 'completed')
         .eq('delivery_person_id', user.id)
         .order('completed_at', { ascending: false });
 
-      if (ordersError) {
-        console.error('Error fetching completed orders:', ordersError);
-        toast.error('Failed to fetch completed orders');
-        return;
-      }
+      if (error) throw error;
+      if (!ordersData?.length) return setDeliveryCompletedOrders([]);
 
-      if (!ordersData || ordersData.length === 0) {
-        console.log('No completed orders found for delivery person');
-        setDeliveryCompletedOrders([]);
-        return;
-      }
+      const orderIds = ordersData.map(o => o.id);
 
-      console.log('Found completed orders:', ordersData.length);
+      const [{ data: tablesData, error: tablesError }] = await Promise.all([
+        supabase.from('order_tables').select('*').in('order_id', orderIds)
+      ]);
+      if (tablesError) throw tablesError;
 
-      // Extract order IDs to fetch related table data
-      const orderIds = (ordersData as any[]).map(order => order.id);
+      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
 
-      // Fetch the order_tables data for these orders
-      const { data: tablesData, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('*')
-        .in('order_id', orderIds);
-
-      if (tablesError) {
-        console.error('Error fetching order tables:', tablesError);
-        toast.error('Failed to fetch table details');
-        return;
-      }
-
-      // Group tables by order_id
-      const tablesByOrder = (tablesData || []).reduce((acc, table) => {
-        if (!acc[table.order_id]) {
-          acc[table.order_id] = [];
-        }
-        acc[table.order_id].push({
-          id: table.id,
-          size: table.size,
-          colour: table.colour,
-          topColour: table.top_colour || table.colour,
-          frameColour: table.frame_colour || table.colour,
-          quantity: table.quantity,
-          price: table.price
-        });
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      // Transform the data to match the Order type structure
-      const formattedOrders = (ordersData as unknown as OrderResponse[]).map(order => ({
+      const formatted = ordersData.map(order => ({
         id: order.id,
         customerName: order.customer_name,
         address: order.address,
         contactNumber: order.contact_number,
-        tables: tablesByOrder[order.id] || [{
+        tables: tablesByOrder[order.id]?.map(t => ({
+          id: t.id,
+          size: t.size,
+          colour: t.colour,
+          topColour: t.top_colour || t.colour,
+          frameColour: t.frame_colour || t.colour,
+          quantity: t.quantity,
+          price: t.price,
+        })) || [{
           id: order.id,
           size: order.table_size,
           colour: order.colour,
           topColour: order.colour,
           frameColour: order.colour,
           quantity: order.quantity,
-          price: order.price / order.quantity
+          price: order.price / order.quantity,
         }],
         note: order.note,
         status: order.status as OrderStatus,
@@ -417,15 +346,13 @@ export function OrderList() {
         completedAt: order.completed_at ? new Date(order.completed_at) : undefined,
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
-        delivery_person_id: order.delivery_person_id,
-        salesPersonName: order.sales_person_name  // Include sales person name
+        salesPersonName: order.sales_person_name,
       }));
 
-      console.log('Formatted completed orders:', formattedOrders);
-      setDeliveryCompletedOrders(formattedOrders);
-    } catch (error) {
-      console.error('Error processing completed orders:', error);
-      toast.error('An error occurred while fetching completed orders');
+      setDeliveryCompletedOrders(formatted);
+    } catch (err) {
+      console.error('Fetch completed deliveries failed:', err);
+      toast.error('Failed to fetch completed deliveries');
     }
   };
 

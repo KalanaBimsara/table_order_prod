@@ -242,15 +242,26 @@ const OrderForm: React.FC = () => {
           </div>
           <div className="mt-2 pt-2 border-t text-xs space-y-1" style={{ borderColor: colors.border }}>
             {order.note && (
-              <div>
-                <span className="font-bold">Notes / Drawing: </span>
-                {order.note}
+              <div
+                style={{
+                  color: 'red',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  marginTop: '6px'
+                }}>
+                Notes / Drawing: {order.note}
               </div>
             )}
             {singleTable.wireHolesComment && (
-              <div>
-                <span className="font-bold">Wire Hole Comment: </span>
-                {singleTable.wireHolesComment}
+              <div
+                style={{
+                  color: '#ff0000ff',
+                  fontWeight: '500',
+                  fontSize: '12px',
+                  marginTop: '4px'
+                }}
+              >
+                Wire Hole Comment: {singleTable.wireHolesComment}
               </div>
             )}
           </div>

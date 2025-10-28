@@ -244,7 +244,7 @@ const Dashboard: React.FC = () => {
                                     <div className="text-xs text-muted-foreground mt-1 space-x-2">
                                       {table.legSize && <span>Leg: {table.legSize}</span>}
                                       {table.legHeight && <span>Height: {table.legHeight}</span>}
-                                      {table.wireHoles && table.wireHoles !== 'none' && <span>Wire: {table.wireHoles}</span>}
+                                      {table.wireHoles && table.wireHoles !== 'no wire hole' && <span>Wire: {table.wireHoles}</span>}
                                     </div>
                                   )}
                                 </div>
