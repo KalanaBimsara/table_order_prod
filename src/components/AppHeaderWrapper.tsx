@@ -35,25 +35,43 @@ const AppHeaderWrapper = () => {
   };
 
   // Menu items based on user role
-  const menuItems = [
-    { href: '/', label: 'Dashboard', icon: Home },
-    { href: '/orders', label: 'Orders', icon: Package },
-    { href: '/history', label: 'Order History', icon: History },
-  ];
-  
+  const menuItems = [{
+    href: '/',
+    label: 'Dashboard',
+    icon: Home
+  }, {
+    href: '/orders',
+    label: 'Orders',
+    icon: Package
+  }, {
+    href: '/history',
+    label: 'Order History',
+    icon: History
+  }];
   if (userRole === 'admin') {
-    menuItems.push(
-      { href: '/production', label: 'Production', icon: Factory },
-      { href: '/production-queue', label: 'Production Queue', icon: Factory }
-    );
+    menuItems.push({
+      href: '/production',
+      label: 'Production',
+      icon: Factory
+    }, {
+      href: '/production-queue',
+      label: 'Production Queue',
+      icon: Factory
+    });
   }
-
   if (userRole === 'manager' || userRole === 'admin') {
-    menuItems.push({ href: '/management', label: 'Management', icon: Settings });
+    menuItems.push({
+      href: '/management',
+      label: 'Management',
+      icon: Settings
+    });
   }
-
   if (userRole === 'admin') {
-    menuItems.push({ href: '/super-admin/login', label: 'Super Admin', icon: Shield });
+    menuItems.push({
+      href: '/super-admin/login',
+      label: 'Super Admin',
+      icon: Shield
+    });
   }
   return <header className="bg-background sticky top-0 z-40 w-full border-b">
       <div className="container flex h-16 items-center justify-between py-4">
@@ -77,24 +95,15 @@ const AppHeaderWrapper = () => {
               </div>
             </div>
             <nav className="flex flex-col p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-100px)]">
-              {menuItems.map((item, idx) => (
-                <button
-                  key={item.href}
-                  onClick={() => {
-                    navigate(item.href);
-                    setMenuOpen(false);
-                  }}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-3 w-full text-left ${
-                    location.pathname === item.href
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                  style={{ animationDelay: `${idx * 50}ms` }}
-                >
+              {menuItems.map((item, idx) => <button key={item.href} onClick={() => {
+              navigate(item.href);
+              setMenuOpen(false);
+            }} className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-3 w-full text-left ${location.pathname === item.href ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`} style={{
+              animationDelay: `${idx * 50}ms`
+            }}>
                   <item.icon size={18} />
                   {item.label}
-                </button>
-              ))}
+                </button>)}
             </nav>
           </SheetContent>
         </Sheet>
@@ -112,16 +121,10 @@ const AppHeaderWrapper = () => {
           {userRole === "admin" || userRole === "manager"}
 
           {/* ✅ Show "Management Dashboard" button for admin and manager users */}
-          {(userRole === "admin" || userRole === "manager") && <Button variant="outline" onClick={() => navigate("/management")} size={isMobile ? "icon" : "default"} aria-label={isMobile ? "Management" : undefined}>
-              <Shield size={16} className={isMobile ? "" : "mr-2"} />
-              {!isMobile && "Management"}
-            </Button>}
+          {userRole === "admin" || userRole === "manager"}
 
           {/* ✅ Show "Super Admin" button for admin users */}
-          {userRole === "admin" && <Button variant="outline" onClick={() => navigate("/super-admin/login")} className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" size={isMobile ? "icon" : "default"} aria-label={isMobile ? "Super Admin" : undefined}>
-              <Shield size={16} className={isMobile ? "" : "mr-2"} />
-              {!isMobile && "Super Admin"}
-            </Button>}
+          {userRole === "admin"}
 
           {mounted && <Button variant="ghost" size="icon" onClick={toggleTheme}>
               <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
