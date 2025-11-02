@@ -256,7 +256,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                               <span className="font-medium text-foreground">{table.legHeight}</span>
                             </div>
                           )}
-                          {table.wireHoles && table.wireHoles !== 'none' && (
+                          {table.wireHoles && table.wireHoles !== 'no wire holes' && (
                             <div className="text-muted-foreground sm:col-span-2">
                               <span>Wire Holes: </span>
                               <span className="font-medium text-foreground">{table.wireHoles}</span>

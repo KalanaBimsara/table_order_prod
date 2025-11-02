@@ -190,6 +190,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .from('orders')
         .insert({
           customer_name: orderData.customerName,
+          customer_district: (orderData as any).customerDistrict || null,
           address: orderData.address,
           contact_number: orderData.contactNumber,
           note: orderData.note || null,
@@ -202,10 +203,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           delivery_fee: orderData.deliveryFee || 0,
           additional_charges: orderData.additionalCharges || 0,
           sales_person_name: profileData?.name || null,
-          delivery_date: (orderData as any).deliveryDate || null
-          // rder_form_number is automatically set in DB, no need to include it
+          delivery_date: (orderData as any).deliveryDate || null,
+          delivery_type: (orderData as any).deliveryType || null
         })
-        .select('id, order_form_number')
+        .select('id')
         .single();
 
 

@@ -48,6 +48,8 @@ const OrderForm: React.FC = () => {
         deliveryDate: (data as any).delivery_date,
         contactNumber: data.contact_number,
         orderFormNumber: (data as any).order_form_number,
+        customerDistrict: data.customer_district,
+        deliveryType: data.delivery_type as 'courier' | 'non-courier' | undefined,
         tables: data.order_tables?.map((table: any) => ({
           id: table.id,
           size: table.size,
@@ -145,76 +147,147 @@ const OrderForm: React.FC = () => {
     const colors = colorStyles[colorName];
     const formattedOrderNumber = order.orderFormNumber || '000000';
     
+    // Check if order has customizations
+    const hasCustomizations = order.tables.some(table => 
+      table.size?.toLowerCase().includes('custom')
+    );
+    
     return (
       <div className="form-copy" style={{ height: '50vh', pageBreakAfter:!(tableIndex === order.tables.length - 1 && copyNumber === 4)? 'always': 'auto', pageBreakInside: 'avoid' }}>
-        <div className="p-3 h-full" style={{ 
+        <div className="p-3 h-full relative" style={{ 
           fontFamily: 'Arial, sans-serif', 
           fontSize: '11px',
           backgroundColor: colors.bg,
           color: colors.text
         }}>
+          {/* Custom Order Seal */}
+          {hasCustomizations && (
+            <div style={{
+              position: 'absolute',
+              bottom: '20px',
+              right: '20px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              border: '3px solid #991b1b',
+              transform: 'rotate(-5deg)',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              zIndex: 10
+            }}>
+              CUSTOM ORDER
+            </div>
+          )}
+          
+          {/* Company Info - Fixed at Top Center */}
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            width: '100%',
+            zIndex: 5
+          }}>
+            <h1 className="text-sm font-bold" style={{ color: colors.text }}>BOSS FURNITURE (PVT) LTD.</h1>
+            <p className="text-xs" style={{ color: colors.text }}>No. 31/A/02, Gammanpila, Bandaragama.</p>
+            <p className="text-xs" style={{ color: colors.text }}>Tel: 075 166 3775 / 078 844 3776</p>
+          </div>
+
+          {/* Copy Label - Fixed at Top Left */}
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            zIndex: 5
+          }}>
+            <div className="text-xs font-bold" style={{ color: colors.text }}>{copyLabel}</div>
+          </div>
+
+          {/* Order No - Fixed at Top Right */}
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            textAlign: 'right',
+            zIndex: 5
+          }}>
+            <div className="text-xs font-bold" style={{ lineHeight: '1' }}>
+              <div className="font-bold">
+                <span style={{ fontSize: '12px', fontWeight: '600', color: colors.text }}>ORDER NO: </span>
+                <span style={{ fontSize: '30px', fontWeight: '600', color: colors.text }}>{formattedOrderNumber}</span>
+              </div>
+            </div>
+          </div>
+
           {/* Header - Condensed */}
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <div className="text-xs font-bold mt-1" style={{ color: colors.text }}>{copyLabel}</div>
+          <div className="flex justify-between items-start" style={{ marginTop: '50px' }}>
+            <div className="flex flex-col">
+              {/* Customer Information - Aligned with Delivery Date */}
+              <div style={{ marginTop: '0px', fontSize: '12px' }}>
+                <div className="grid grid-cols-2 gap-2 mb-1">
+                  <div><span className="font-medium">Page:</span> {order.salesPersonName || '______'} | <span className="font-medium">Page Contact:</span> {salesPersonContact || '______'}</div>
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600' }}><span className="font-medium">Customer:</span> {order.customerName}</div>
+                <div style={{ fontSize: '14px', fontWeight: '600' }}><span className="font-medium">Tel:</span> {order.contactNumber}</div>
+                <div style={{ fontSize: '14px', fontWeight: '600' }}><span className="font-medium">Address:</span> {order.address}</div>
+                {order.customerDistrict && (
+                  <div style={{ fontSize: '14px', color: '#2563eb', fontWeight: '600' }}>
+                    District: {order.customerDistrict}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="text-center flex-1">
-              <h1 className="text-sm font-bold">BOSS FURNITURE (PVT) LTD.</h1>
-              <p className="text-xs">No. 31/A/02, Gammanpila, Bandaragama. Tel: 075 166 3775 / 078 844 3776</p>
+            <div className="flex-1"></div>
+
+            <div className="text-right text-xs" style={{ lineHeight: '1.3' }}>
+              <div style={{ marginBottom: '1px' }}>Ordered Date:{' '}{order.createdAt? new Date(order.createdAt).toLocaleDateString('en-GB'): '______'}</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '1px' }}>Delivery Date: {order.deliveryDate || '______'}</div>
+              {order.deliveryType && (
+                <div style={{ fontSize: '14px',color: '#16a34a', fontWeight: '600', marginBottom: '1px' }}>
+                  Delivery Type: {order.deliveryType}
+                </div>
+              )}
+              <div style={{ fontSize: '14px', color: '#FF0000',fontWeight: '600', marginBottom: '1px'}}>Courier Fee: {order.deliveryFee || '______'} /=</div>
+              <div style={{ fontSize: '16px', color: '#FF0000',fontWeight: '600'}}>Total Price: {order.totalPrice || '______'} /=</div>
             </div>
-
-            <div className="text-right text-xs">
-              <div className="font-bold">ORDER NO: {formattedOrderNumber}</div>
-              <div>Delivery Date: {order.deliveryDate || '______'}</div>
-              <div>Ordered Date:{' '}{order.createdAt? new Date(order.createdAt).toLocaleDateString('en-GB'): '______'}</div>
-            </div>
-          </div>
-
-          {/* Customer Information - Condensed */}
-          <div className="grid grid-cols-2 gap-2 mb-2" style={{ fontSize: '12px' }}>
-            <div><span className="font-medium">Page:</span> {order.salesPersonName || '______'}</div>
-            <div><span className="font-medium">Page Contact:</span> {salesPersonContact || '______'}</div>
-          </div>
-
-          <div className="mb-2" style={{ fontSize: '12px' }}>
-            <div><span className="font-medium">Customer:</span> {order.customerName} | <span className="font-medium">Tel:</span> {order.contactNumber}</div>
-            <div><span className="font-medium">Address:</span> {order.address}</div>
-            <div><span className="font-medium">Assembly:</span> {editableDetails.assemblingType || '______'}</div>
           </div>
 
           {/* Order Table - Condensed Single Row */}
           <div className="border mb-2" style={{ borderColor: colors.border }}>
-            <table className="w-full" style={{ fontSize: '11px' }}>
+            <table className="w-full" style={{ fontSize: '14px' }}>
               <thead>
                 <tr className="border-b" style={{ borderColor: colors.border }}>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Size</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Top Color</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Holes</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Qty</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Leg Size</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Leg Shape</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Leg height</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>Leg Color</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>L Normal</th>
-                  <th className="border-r p-1 font-medium" style={{ borderColor: colors.border }}>L Reverse</th>
-                  <th className="p-1 font-medium">Notes</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Size</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Top Color</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Holes</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Qty</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Size</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Shape</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg height</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Color</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L Normal</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L Reverse</th>
+                  <th className="p-1 font-medium text-center">Notes</th>
                   
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-b" style={{ borderColor: colors.border }}>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.size}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.topColour || singleTable.colour}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.wireHoles || 'normal'}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.size}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.topColour || singleTable.colour}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.wireHoles || 'normal'}</td>
                   <td className="border-r p-1 text-center font-bold" style={{ borderColor: colors.border }}>{singleTable.quantity}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.legSize || ''}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.legShape || ''}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.legHeight || ''}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}>{singleTable.frameColour || ''}</td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}></td>
-                  <td className="border-r p-1" style={{ borderColor: colors.border }}></td>
-                  <td className="p-1">{singleTable.wireHolesComment || ''}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legSize || ''}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legShape || ''}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legHeight || ''}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.frameColour || ''}</td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}></td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}></td>
+                  <td className="p-1 text-center">{singleTable.wireHolesComment || ''}</td>
                 </tr>
               </tbody>
             </table>
@@ -232,12 +305,13 @@ const OrderForm: React.FC = () => {
               <div className="mt-1 text-xs">Approved via W/App</div>
             </div>
             <div className="text-center">
-              <div className="font-medium">Contact Person</div>
               <div className="border-b mt-3" style={{ borderColor: colors.border }}>&nbsp;</div>
+              <div className="font-medium">Authorized Signature</div>
             </div>
+            
             <div className="text-center">
-              <div className="font-medium">Entered/Approved</div>
               <div className="border-b mt-3" style={{ borderColor: colors.border }}>&nbsp;</div>
+              <div className="font-medium">Authorized Signature</div>
             </div>
           </div>
           <div className="mt-2 pt-2 border-t text-xs space-y-1" style={{ borderColor: colors.border }}>

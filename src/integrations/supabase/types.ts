@@ -80,6 +80,7 @@ export type Database = {
           front_panel_size: string | null
           id: string
           leg_height: string | null
+          leg_shape: string | null
           leg_size: string | null
           order_id: string | null
           price: number
@@ -97,6 +98,7 @@ export type Database = {
           front_panel_size?: string | null
           id?: string
           leg_height?: string | null
+          leg_shape?: string | null
           leg_size?: string | null
           order_id?: string | null
           price: number
@@ -114,6 +116,7 @@ export type Database = {
           front_panel_size?: string | null
           id?: string
           leg_height?: string | null
+          leg_shape?: string | null
           leg_size?: string | null
           order_id?: string | null
           price?: number
@@ -142,12 +145,16 @@ export type Database = {
           contact_number: string
           created_at: string | null
           created_by: string | null
+          customer_district: string | null
           customer_name: string
+          delivery_date: string | null
           delivery_fee: number | null
           delivery_person_id: string | null
           delivery_status: string | null
+          delivery_type: string | null
           id: string
           note: string | null
+          order_form_number: string | null
           price: number
           quantity: number
           sales_person_name: string | null
@@ -163,12 +170,16 @@ export type Database = {
           contact_number: string
           created_at?: string | null
           created_by?: string | null
+          customer_district?: string | null
           customer_name: string
+          delivery_date?: string | null
           delivery_fee?: number | null
           delivery_person_id?: string | null
           delivery_status?: string | null
+          delivery_type?: string | null
           id?: string
           note?: string | null
+          order_form_number?: string | null
           price: number
           quantity: number
           sales_person_name?: string | null
@@ -184,12 +195,16 @@ export type Database = {
           contact_number?: string
           created_at?: string | null
           created_by?: string | null
+          customer_district?: string | null
           customer_name?: string
+          delivery_date?: string | null
           delivery_fee?: number | null
           delivery_person_id?: string | null
           delivery_status?: string | null
+          delivery_type?: string | null
           id?: string
           note?: string | null
+          order_form_number?: string | null
           price?: number
           quantity?: number
           sales_person_name?: string | null
@@ -282,18 +297,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          contact_no: string | null
           created_at: string | null
           id: string
           name: string | null
           role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
+          contact_no?: string | null
           created_at?: string | null
           id: string
           name?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
+          contact_no?: string | null
           created_at?: string | null
           id?: string
           name?: string | null
@@ -389,10 +407,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_role: { Args: never; Returns: string }
       super_admin_get_session: {
         Args: { p_session_token: string }
         Returns: {
@@ -419,10 +434,7 @@ export type Database = {
         Args: { p_session_token: string }
         Returns: undefined
       }
-      update_daily_analytics: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_daily_analytics: { Args: never; Returns: undefined }
     }
     Enums: {
       user_role: "customer" | "seller" | "delivery" | "admin" | "manager"

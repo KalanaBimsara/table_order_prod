@@ -103,10 +103,11 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
         {showCustomSize && (
           <>
             <div className="space-y-2">
-              <FormLabel>Custom Size</FormLabel>
+              <FormLabel>Custom Size *</FormLabel>
               <Input
                 placeholder="e.g., 48x24"
                 value={customSize}
+                required
                 onChange={(e) => {
                   const value = e.target.value;
                   // Allow only numbers, 'x', and spaces — e.g., 48 x 24
@@ -126,12 +127,13 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <FormLabel>Custom Price</FormLabel>
+              <FormLabel>Custom Price *</FormLabel>
               <div className="flex gap-2">
                 <Input
                   type="number"
                   placeholder="Enter price"
                   value={customPrice}
+                  required
                   onChange={(e) => setCustomPrice(e.target.value)}
                 />
                 <Button 

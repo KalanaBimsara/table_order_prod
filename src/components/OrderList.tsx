@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Order, OrderStatus } from '@/types/order';
+import { Order, OrderStatus, DeliveryStatus } from '@/types/order';
 import { DatePicker } from '@/components/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,6 @@ import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-f
 // Define the types for the Supabase responses
 type OrderResponse = {
   id: string;
-  order_form_number: string;
   customer_name: string;
   address: string;
   contact_number: string;
@@ -33,7 +32,7 @@ type OrderResponse = {
   created_at: string;
   completed_at: string | null;
   delivery_person_id: string | null;
-  sales_person_name: string | null;  // Added this field
+  sales_person_name: string | null;
 };
 
 type OrderTableResponse = {
@@ -53,17 +52,25 @@ export function OrderList() {
   const isMobile = useIsMobile();
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('all');
   const [globalSearch, setGlobalSearch] = useState('');
+  const [searchFilter, setSearchFilter] = useState<'all' | 'orderNumber'>('all');
   
   // Date search states
   const [searchFromDate, setSearchFromDate] = useState<Date | undefined>();
   const [searchToDate, setSearchToDate] = useState<Date | undefined>();
   const [customerNameSearch, setCustomerNameSearch] = useState('');
 
-  // Filter orders based on global search
+  // Filter orders based on global search and filter type
   const filterOrdersBySearch = (orderList: Order[]) => {
     if (!globalSearch.trim()) return orderList;
     
     const searchLower = globalSearch.toLowerCase().trim();
+    
+    if (searchFilter === 'orderNumber') {
+      return orderList.filter(order => 
+        order.orderFormNumber && order.orderFormNumber.includes(searchLower)
+      );
+    }
+    
     return orderList.filter(order => 
       order.customerName.toLowerCase().includes(searchLower) ||
       order.address.toLowerCase().includes(searchLower) ||
@@ -167,7 +174,7 @@ export function OrderList() {
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
-          id, order_form_number, customer_name, address, contact_number,
+          id, customer_name, address, contact_number,
           table_size, colour, quantity, price, note, status, created_at,
           completed_at, delivery_person_id, sales_person_name
         `)
@@ -185,7 +192,11 @@ export function OrderList() {
       ]);
       if (tablesError) throw tablesError;
 
-      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
+      const tablesByOrder = (tablesData || []).reduce((acc: any, t: any) => {
+        if (!acc[t.order_id]) acc[t.order_id] = [];
+        acc[t.order_id].push(t);
+        return acc;
+      }, {});
 
       const formatted = ordersData.map(order => ({
         id: order.id,
@@ -216,7 +227,7 @@ export function OrderList() {
         totalPrice: order.price,
         assignedTo: order.delivery_person_id,
         salesPersonName: order.sales_person_name,
-        deliveryStatus: 'ready',
+        deliveryStatus: 'ready' as DeliveryStatus,
       }));
 
       setReadyOrders(formatted);
@@ -232,7 +243,7 @@ export function OrderList() {
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
-          id, order_form_number, customer_name, address, contact_number,
+          id, customer_name, address, contact_number,
           table_size, colour, quantity, price, note, status, created_at,
           completed_at, delivery_person_id, sales_person_name
         `)
@@ -251,7 +262,11 @@ export function OrderList() {
       ]);
       if (tablesError) throw tablesError;
 
-      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
+      const tablesByOrder = (tablesData || []).reduce((acc: any, t: any) => {
+        if (!acc[t.order_id]) acc[t.order_id] = [];
+        acc[t.order_id].push(t);
+        return acc;
+      }, {});
 
       const formatted = ordersData.map(order => ({
         id: order.id,
@@ -298,7 +313,7 @@ export function OrderList() {
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
-          id, order_form_number, customer_name, address, contact_number,
+          id, customer_name, address, contact_number,
           table_size, colour, quantity, price, note, status, created_at,
           completed_at, delivery_person_id, sales_person_name
         `)
@@ -316,7 +331,11 @@ export function OrderList() {
       ]);
       if (tablesError) throw tablesError;
 
-      const tablesByOrder = Object.groupBy(tablesData || [], t => t.order_id);
+      const tablesByOrder = (tablesData || []).reduce((acc: any, t: any) => {
+        if (!acc[t.order_id]) acc[t.order_id] = [];
+        acc[t.order_id].push(t);
+        return acc;
+      }, {});
 
       const formatted = ordersData.map(order => ({
         id: order.id,
@@ -391,18 +410,29 @@ export function OrderList() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Label htmlFor="search" className="text-sm font-medium mb-2 block">Search Orders</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                id="search"
-                type="text"
-                placeholder="Search by customer, address, contact, or order number..."
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                className="pl-10"
-              />
+          <div className="mb-4 space-y-2">
+            <Label htmlFor="search" className="text-sm font-medium">Search Orders</Label>
+            <div className="flex gap-2 flex-col sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                <Input
+                  id="search"
+                  type="text"
+                  placeholder={searchFilter === 'orderNumber' ? "Search by order number..." : "Search by customer, address, contact, or order number..."}
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber') => setSearchFilter(value)}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Fields</SelectItem>
+                  <SelectItem value="orderNumber">Order Number</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Tabs defaultValue="myDeliveries">
@@ -544,18 +574,29 @@ export function OrderList() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Label htmlFor="search" className="text-sm font-medium mb-2 block">Search Orders</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                id="search"
-                type="text"
-                placeholder="Search by customer, address, contact, or order number..."
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                className="pl-10"
-              />
+          <div className="mb-4 space-y-2">
+            <Label htmlFor="search" className="text-sm font-medium">Search Orders</Label>
+            <div className="flex gap-2 flex-col sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                <Input
+                  id="search"
+                  type="text"
+                  placeholder={searchFilter === 'orderNumber' ? "Search by order number..." : "Search by customer, address, contact, or order number..."}
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber') => setSearchFilter(value)}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Fields</SelectItem>
+                  <SelectItem value="orderNumber">Order Number</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Tabs defaultValue="all">

@@ -26,6 +26,7 @@ export type Order = {
   id: string,
   order_form_number?: string,
   customerName: string,
+  customerDistrict?: string,  // Added for district selection
   address: string,
   contactNumber: string,
   tables: TableItem[],
@@ -37,6 +38,7 @@ export type Order = {
   deliveryFee?: number,
   additionalCharges?: number,
   deliveryDate?: string,
+  deliveryType?: 'courier' | 'non-courier',  // Added for delivery type
   assignedTo?: string,
   delivery_person_id?: string,  // Added to match database column name
   createdBy?: string,

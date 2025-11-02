@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import TableItemForm from './TableItemForm';
@@ -37,12 +39,14 @@ const tableItemSchema = z.object({
 // Define the overall form schema
 const formSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters" }),
+  customerDistrict: z.string().min(1, { message: "Please select a district" }),
   address: z.string().min(5, { message: "Please enter a valid address" }),
   contactNumber: z.string().min(10, { message: "Please enter a valid phone number" }),
-  deliveryDate: z.string().optional(),
+  deliveryDate: z.string().min(1, { message: "Please select a delivery date" }),
+  deliveryType: z.enum(['courier', 'non-courier'], { required_error: "Please select delivery type" }),
   tables: z.array(tableItemSchema).min(1, { message: "At least one table is required" }),
   note: z.string().optional(),
-  deliveryFee: z.number().nonnegative().optional().default(0),
+  deliveryFee: z.number().nonnegative().min(0, { message: "Delivery fee is required" }),
   additionalCharges: z.number().optional().default(0),
 });
 
@@ -81,9 +85,11 @@ export function NewOrderForm() {
       // Prepare order data with the tables - ensure all fields are non-optional
       const orderData = {
         customerName: values.customerName,
+        customerDistrict: values.customerDistrict,
         address: values.address,
         contactNumber: values.contactNumber,
         deliveryDate: values.deliveryDate,
+        deliveryType: values.deliveryType,
         tables: values.tables.map((table): TableItem => ({
           id: table.id,
           size: table.size,
@@ -109,9 +115,11 @@ export function NewOrderForm() {
       await addOrder(orderData);
       form.reset({
         customerName: "",
+        customerDistrict: "",
         address: "",
         contactNumber: "",
         deliveryDate: "",
+        deliveryType: undefined,
         tables: [createEmptyTable()],
         note: "",
         deliveryFee: 0,
@@ -179,7 +187,7 @@ const createEmptyTable = (): TableItem => ({
               name="customerName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
+                  <FormLabel>Customer Name *</FormLabel>
                   <FormControl>
                     <Input placeholder="Jhon Smith" {...field} />
                   </FormControl>
@@ -190,10 +198,35 @@ const createEmptyTable = (): TableItem => ({
             
             <FormField
               control={form.control}
+              name="customerDistrict"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>District *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select district" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {['Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya', 'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu', 'Trincomalee', 'Batticaloa', 'Ampara', 'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla', 'Monaragala', 'Ratnapura', 'Kegalle'].map((district) => (
+                        <SelectItem key={district} value={district}>
+                          {district}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery Address</FormLabel>
+                  <FormLabel>Delivery Address *</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="123 Furniture St, Woodtown" 
@@ -211,7 +244,7 @@ const createEmptyTable = (): TableItem => ({
               name="contactNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contact Number</FormLabel>
+                  <FormLabel>Contact Number *</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder="(07x) xxx-xxxx" {...field} />
                   </FormControl>
@@ -225,7 +258,7 @@ const createEmptyTable = (): TableItem => ({
               name="deliveryDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery Date</FormLabel>
+                  <FormLabel>Delivery Date *</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -261,10 +294,41 @@ const createEmptyTable = (): TableItem => ({
               <div className="mt-6 space-y-4 border-t pt-4">
                 <FormField
                   control={form.control}
+                  name="deliveryType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Delivery Type *</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-col space-y-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="courier" id="delivery-courier" />
+                            <label htmlFor="delivery-courier" className="text-sm font-normal cursor-pointer">
+                              Courier Delivery
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="non-courier" id="delivery-non-courier" />
+                            <label htmlFor="delivery-non-courier" className="text-sm font-normal cursor-pointer">
+                              Non-Courier Delivery
+                            </label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="deliveryFee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Delivery Fee</FormLabel>
+                      <FormLabel>Delivery Fee *</FormLabel>
                       <FormControl>
                         <Input 
                           type="number"
@@ -354,9 +418,11 @@ function useFormProvider() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       customerName: "",
+      customerDistrict: "",
       address: "",
       contactNumber: "",
       deliveryDate: "",
+      deliveryType: undefined,
       tables: [
         {
           id: uuidv4(),
