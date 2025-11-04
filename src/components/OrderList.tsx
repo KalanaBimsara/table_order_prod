@@ -52,7 +52,7 @@ export function OrderList() {
   const isMobile = useIsMobile();
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('all');
   const [globalSearch, setGlobalSearch] = useState('');
-  const [searchFilter, setSearchFilter] = useState<'all' | 'orderNumber'>('all');
+  const [searchFilter, setSearchFilter] = useState<'all' | 'orderNumber' | 'customerName' | 'address'>('all');
   
   // Date search states
   const [searchFromDate, setSearchFromDate] = useState<Date | undefined>();
@@ -67,7 +67,19 @@ export function OrderList() {
     
     if (searchFilter === 'orderNumber') {
       return orderList.filter(order => 
-        order.orderFormNumber && order.orderFormNumber.includes(searchLower)
+        order.orderFormNumber && order.orderFormNumber.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    if (searchFilter === 'customerName') {
+      return orderList.filter(order => 
+        order.customerName.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    if (searchFilter === 'address') {
+      return orderList.filter(order => 
+        order.address.toLowerCase().includes(searchLower)
       );
     }
     
@@ -75,7 +87,7 @@ export function OrderList() {
       order.customerName.toLowerCase().includes(searchLower) ||
       order.address.toLowerCase().includes(searchLower) ||
       order.contactNumber.toLowerCase().includes(searchLower) ||
-      (order.orderFormNumber && order.orderFormNumber.includes(searchLower))
+      (order.orderFormNumber && order.orderFormNumber.toLowerCase().includes(searchLower))
     );
   };
 
@@ -418,19 +430,26 @@ export function OrderList() {
                 <Input
                   id="search"
                   type="text"
-                  placeholder={searchFilter === 'orderNumber' ? "Search by order number..." : "Search by customer, address, contact, or order number..."}
+                  placeholder={
+                    searchFilter === 'orderNumber' ? "Search by order number..." :
+                    searchFilter === 'customerName' ? "Search by customer name..." :
+                    searchFilter === 'address' ? "Search by address..." :
+                    "Search by customer, address, contact, or order number..."
+                  }
                   value={globalSearch}
                   onChange={(e) => setGlobalSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber') => setSearchFilter(value)}>
+              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber' | 'customerName' | 'address') => setSearchFilter(value)}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Fields</SelectItem>
                   <SelectItem value="orderNumber">Order Number</SelectItem>
+                  <SelectItem value="customerName">Customer Name</SelectItem>
+                  <SelectItem value="address">Address</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -582,19 +601,26 @@ export function OrderList() {
                 <Input
                   id="search"
                   type="text"
-                  placeholder={searchFilter === 'orderNumber' ? "Search by order number..." : "Search by customer, address, contact, or order number..."}
+                  placeholder={
+                    searchFilter === 'orderNumber' ? "Search by order number..." :
+                    searchFilter === 'customerName' ? "Search by customer name..." :
+                    searchFilter === 'address' ? "Search by address..." :
+                    "Search by customer, address, contact, or order number..."
+                  }
                   value={globalSearch}
                   onChange={(e) => setGlobalSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber') => setSearchFilter(value)}>
+              <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber' | 'customerName' | 'address') => setSearchFilter(value)}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Fields</SelectItem>
                   <SelectItem value="orderNumber">Order Number</SelectItem>
+                  <SelectItem value="customerName">Customer Name</SelectItem>
+                  <SelectItem value="address">Address</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -674,16 +700,34 @@ export function OrderList() {
       <CardContent>
         <div className="mb-4">
           <Label htmlFor="search" className="text-sm font-medium mb-2 block">Search Orders</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input
-              id="search"
-              type="text"
-              placeholder="Search by customer, address, contact, or order number..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-2 flex-col sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                id="search"
+                type="text"
+                placeholder={
+                  searchFilter === 'orderNumber' ? "Search by order number..." :
+                  searchFilter === 'customerName' ? "Search by customer name..." :
+                  searchFilter === 'address' ? "Search by address..." :
+                  "Search by customer, address, contact, or order number..."
+                }
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={searchFilter} onValueChange={(value: 'all' | 'orderNumber' | 'customerName' | 'address') => setSearchFilter(value)}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Fields</SelectItem>
+                <SelectItem value="orderNumber">Order Number</SelectItem>
+                <SelectItem value="customerName">Customer Name</SelectItem>
+                <SelectItem value="address">Address</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         {/* Sales Person Filter */}

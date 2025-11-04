@@ -21,7 +21,7 @@ export function useNotification() {
         const currentPermission = NotificationService.getPermissionStatus();
         setPermission(currentPermission);
         
-        // If permission is already granted, check if service worker is ready
+        // If permission is already granted, check if service worker is ready (for web only)
         if (currentPermission === 'granted' && 'serviceWorker' in navigator) {
           try {
             const registration = await navigator.serviceWorker.ready;
@@ -29,6 +29,44 @@ export function useNotification() {
             if (existingSubscription) {
               setSubscription(existingSubscription);
               console.log('Existing push subscription found');
+              
+              // Verify subscription exists in database
+              if (user) {
+                try {
+                  const subscriptionJSON = JSON.parse(JSON.stringify(existingSubscription));
+                  const subscriptionEndpoint = subscriptionJSON.endpoint as string;
+                  
+                  const { data: existingSubs } = await supabase
+                    .from('push_subscriptions')
+                    .select('id, subscription')
+                    .eq('user_id', user.id);
+                  
+                  // Check if this endpoint already exists
+                  let exists = false;
+                  if (existingSubs && Array.isArray(existingSubs)) {
+                    exists = existingSubs.some((sub: any) => {
+                      try {
+                        const subData = typeof sub.subscription === 'string' 
+                          ? JSON.parse(sub.subscription) 
+                          : sub.subscription;
+                        return subData?.endpoint === subscriptionEndpoint;
+                      } catch {
+                        return false;
+                      }
+                    });
+                  }
+                  
+                  if (!exists) {
+                    // Subscription not in database, save it
+                    await supabase.from('push_subscriptions').insert({
+                      user_id: user.id,
+                      subscription: subscriptionJSON
+                    });
+                  }
+                } catch (error) {
+                  console.error('Error checking/saving subscription:', error);
+                }
+              }
             }
           } catch (error) {
             console.error('Error checking existing subscription:', error);
@@ -38,7 +76,7 @@ export function useNotification() {
     };
 
     checkSupport();
-  }, []);
+  }, [user]);
 
   // Subscribe to push notifications
   const subscribeToPushNotifications = async () => {
@@ -51,7 +89,7 @@ export function useNotification() {
     try {
       // Request permission for notifications
       const permissionGranted = await NotificationService.requestPermission();
-      setPermission(Notification.permission);
+      setPermission(NotificationService.getPermissionStatus());
       
       if (!permissionGranted) {
         toast.error('Notification permission denied');
@@ -59,49 +97,83 @@ export function useNotification() {
         return;
       }
 
-      // Register service worker
-      const registration = await NotificationService.registerServiceWorker();
-      if (!registration) {
-        toast.error('Failed to register service worker');
-        setLoading(false);
-        return;
-      }
+      // For web: Register service worker and subscribe to push
+      // For Capacitor: Native notifications are handled automatically
+      if (!('Capacitor' in window)) {
+        // Register service worker (web only)
+        const registration = await NotificationService.registerServiceWorker();
+        if (!registration) {
+          toast.error('Failed to register service worker');
+          setLoading(false);
+          return;
+        }
 
-      // Subscribe to push notifications
-      const newSubscription = await NotificationService.subscribeToPush(registration);
-      if (!newSubscription) {
-        toast.error('Failed to subscribe to push notifications');
-        setLoading(false);
-        return;
-      }
+        // Subscribe to push notifications (web only)
+        const newSubscription = await NotificationService.subscribeToPush(registration);
+        if (!newSubscription) {
+          toast.error('Failed to subscribe to push notifications');
+          setLoading(false);
+          return;
+        }
 
-      // Convert the PushSubscription to a plain object that can be stored as JSON
-      const subscriptionJSON = JSON.parse(JSON.stringify(newSubscription));
+        // Convert the PushSubscription to a plain object that can be stored as JSON
+        const subscriptionJSON = JSON.parse(JSON.stringify(newSubscription));
 
-      // Save the subscription to the database
-      const { error } = await supabase.from('push_subscriptions').insert({
-        user_id: user.id,
-        subscription: subscriptionJSON
-      });
+                          // Check if subscription already exists
+          const subscriptionEndpoint = subscriptionJSON.endpoint as string;
+          const { data: existingSubs } = await supabase
+            .from('push_subscriptions')
+            .select('id, subscription')
+            .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Failed to save subscription to database:', error);
-        toast.error('Failed to save subscription');
-      } else {
-        setSubscription(newSubscription);
-        toast.success('Successfully subscribed to notifications');
-        
-        // Send a test notification after subscription
-        setTimeout(() => {
-          NotificationService.testNotification()
-            .then(success => {
-              if (!success) {
-                console.warn('Test notification may not have been displayed');
+          // Check if this endpoint already exists
+          let exists = false;
+          if (existingSubs && Array.isArray(existingSubs)) {
+            exists = existingSubs.some((sub: any) => {
+              try {
+                const subData = typeof sub.subscription === 'string' 
+                  ? JSON.parse(sub.subscription) 
+                  : sub.subscription;
+                return subData?.endpoint === subscriptionEndpoint;
+              } catch {
+                return false;
               }
-            })
-            .catch(err => console.error('Error sending test notification:', err));
-        }, 2000);
+            });
+          }
+
+          if (!exists) {
+          // Save the subscription to the database
+          const { error } = await supabase.from('push_subscriptions').insert({
+            user_id: user.id,
+            subscription: subscriptionJSON
+          });
+
+          if (error) {
+            console.error('Failed to save subscription to database:', error);
+            toast.error('Failed to save subscription');
+            setLoading(false);
+            return;
+          }
+        }
+
+        setSubscription(newSubscription);
+      } else {
+        // For Capacitor, permissions are handled natively
+        // No need to save subscription for web push
       }
+
+      toast.success('Successfully subscribed to notifications');
+      
+      // Send a test notification after subscription
+      setTimeout(() => {
+        NotificationService.testNotification()
+          .then(success => {
+            if (!success) {
+              console.warn('Test notification may not have been displayed');
+            }
+          })
+          .catch(err => console.error('Error sending test notification:', err));
+      }, 2000);
     } catch (error) {
       console.error('Error subscribing to push notifications:', error);
       toast.error('Failed to subscribe to notifications');

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const isSigningUp = useRef(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -41,7 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         if (event === 'SIGNED_IN') {
-          toast.success('Successfully signed in');
+          // Only show toast if not coming from signup (to avoid duplicate notification)
+          if (!isSigningUp.current) {
+            toast.success('Successfully signed in');
+          }
+          // Reset the flag after a short delay
+          setTimeout(() => {
+            isSigningUp.current = false;
+          }, 1000);
         } else if (event === 'SIGNED_OUT') {
           toast.success('Successfully signed out');
           setUserRole(null);
@@ -73,6 +81,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Invalid role. Must be one of: customer, delivery, admin, manager");
       }
 
+      // Set flag to suppress duplicate SIGNED_IN notification
+      isSigningUp.current = true;
+
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -85,9 +96,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        isSigningUp.current = false; // Reset on error
+        throw error;
+      }
+      
+      // Only show registration toast - if user is auto-signed in, we won't show SIGNED_IN toast
       toast.success('Registration successful! Please check your email for verification.');
       navigate('/auth');
+      
+      // Reset flag after showing the registration message
+      setTimeout(() => {
+        isSigningUp.current = false;
+      }, 1000);
     } catch (error: any) {
       toast.error(error.message || 'An error occurred during sign up');
       throw error;

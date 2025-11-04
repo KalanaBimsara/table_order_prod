@@ -18,6 +18,10 @@ const Index = () => {
       return;
     }
 
+    if (!user) {
+      return;
+    }
+
     const channel = supabase
       .channel('order-notifications')
       .on('postgres_changes', 
@@ -27,60 +31,66 @@ const Index = () => {
           table: 'orders'
         }, 
         async (payload) => {
-          // New order notification
-          toast.success('New Order Added', {
-            description: `Customer: ${payload.new.customer_name}, Tables: ${payload.new.quantity}`,
-            duration: 5000,
-          });
+          // Prepare notification details
+          const notificationTitle = 'New Order Added';
+          const notificationBody = `Customer: ${payload.new.customer_name}, Tables: ${payload.new.quantity}`;
           
-          // Try to send push notification if service worker is ready
+          // Show system notification (appears in notification panel)
           try {
+            // Request permission if not already granted
+            const permission = NotificationService.getPermissionStatus();
+            if (permission !== 'granted') {
+              await NotificationService.requestPermission();
+            }
+
+            // Register service worker if needed (for web)
             if ('serviceWorker' in navigator) {
-              console.log('Service worker detected, attempting to send push notification');
-              
-              // Check if service worker is activated
-              if (navigator.serviceWorker.controller) {
-                const orderData = {
-                  customerName: payload.new.customer_name,
-                  tables: [{
-                    quantity: payload.new.quantity
-                  }]
-                };
-                
-                console.log('Calling edge function to send push notification');
-                
-                // Call edge function to send push notification
-                await fetch('/api/send-push-notification', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ order: orderData }),
-                });
-                
-                // If we're on mobile, also try to show a notification directly
-                if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                  const notificationOptions: ExtendedNotificationOptions = {
-                    body: `Customer: ${payload.new.customer_name}, Tables: ${payload.new.quantity}`,
-                    vibrate: [200, 100, 200]
-                  };
-                  
-                  await NotificationService.showNotification(
-                    'New Order Added', 
-                    notificationOptions
-                  );
-                }
-              } else {
-                console.log('Service worker controller not found, registering...');
-                // If service worker controller is not found, try to register it
-                const registration = await NotificationService.registerServiceWorker();
-                if (registration) {
-                  console.log('Successfully registered service worker');
-                }
+              await NotificationService.registerServiceWorker();
+            }
+
+            // Show the notification - this will appear in system notification panel
+            const notificationOptions: ExtendedNotificationOptions = {
+              body: notificationBody,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico',
+              vibrate: [200, 100, 200],
+              tag: `order-${payload.new.id}`,
+              renotify: true,
+              data: {
+                url: `${window.location.origin}/orders`,
+                orderId: payload.new.id
               }
+            };
+            
+            await NotificationService.showNotification(notificationTitle, notificationOptions);
+          } catch (error) {
+            console.error('Failed to show notification:', error);
+          }
+
+          // Also trigger push notification via edge function for cross-device notifications
+          // This ensures notifications work even when the user is not actively on the page
+          try {
+            const orderData = {
+              customerName: payload.new.customer_name,
+              tables: [{
+                quantity: payload.new.quantity
+              }]
+            };
+            
+            // Call edge function to send push notification to all user's devices
+            const response = await fetch('/api/send-push-notification', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ order: orderData }),
+            });
+
+            if (!response.ok) {
+              console.error('Failed to send push notification via edge function');
             }
           } catch (error) {
-            console.error('Failed to send push notification:', error);
+            console.error('Error calling push notification edge function:', error);
           }
         }
       )
