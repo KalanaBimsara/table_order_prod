@@ -296,7 +296,7 @@ const OrderForm: React.FC = () => {
 
           {/* Total and Footer - Condensed */}
           <div className="text-xs mb-2">
-            <span className="font-bold">Total Qty: {getTotalQuantity()}</span>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#2563eb' }} className="font-bold" >Total Qty: {getTotalQuantity()}</span>
             {editableDetails.specialNotes && <span className="ml-4 font-medium">Notes: {editableDetails.specialNotes} </span>}
           </div>
 
