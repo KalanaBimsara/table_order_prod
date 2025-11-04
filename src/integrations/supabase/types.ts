@@ -79,6 +79,7 @@ export type Database = {
           front_panel_length: number | null
           front_panel_size: string | null
           id: string
+          l_shape_orientation: string | null
           leg_height: string | null
           leg_shape: string | null
           leg_size: string | null
@@ -97,6 +98,7 @@ export type Database = {
           front_panel_length?: number | null
           front_panel_size?: string | null
           id?: string
+          l_shape_orientation?: string | null
           leg_height?: string | null
           leg_shape?: string | null
           leg_size?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           front_panel_length?: number | null
           front_panel_size?: string | null
           id?: string
+          l_shape_orientation?: string | null
           leg_height?: string | null
           leg_shape?: string | null
           leg_size?: string | null

@@ -62,7 +62,8 @@ const OrderForm: React.FC = () => {
           legShape: table.leg_shape,
           legHeight: table.leg_height,
           wireHoles: table.wire_holes,
-          wireHolesComment: table.wire_holes_comment
+          wireHolesComment: table.wire_holes_comment,
+          lShapeOrientation: table.l_shape_orientation
         })) || [],
         note: data.note,
         status: data.status as any,
@@ -269,8 +270,7 @@ const OrderForm: React.FC = () => {
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Shape</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg height</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Color</th>
-                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L Normal</th>
-                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L Reverse</th>
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L-Shape</th>
                   <th className="p-1 font-medium text-center">Notes</th>
                   
                 </tr>
@@ -285,8 +285,9 @@ const OrderForm: React.FC = () => {
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legShape || ''}</td>
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legHeight || ''}</td>
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.frameColour || ''}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}></td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}></td>
+                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>
+                    {singleTable.lShapeOrientation ? singleTable.lShapeOrientation.charAt(0).toUpperCase() + singleTable.lShapeOrientation.slice(1) : ''}
+                  </td>
                   <td className="p-1 text-center">{singleTable.wireHolesComment || ''}</td>
                 </tr>
               </tbody>

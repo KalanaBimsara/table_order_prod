@@ -13,7 +13,8 @@ export type TableItem = {
   wireHoles?: 'no wire holes' | 'normal' | 'special',
   wireHolesComment?: string,
   frontPanelSize?: '6' | '12' | '16' | '24',
-  frontPanelLength?: number
+  frontPanelLength?: number,
+  lShapeOrientation?: 'normal' | 'reverse'
 };
 
 export type OrderStatus = 'pending' | 'assigned' | 'completed';

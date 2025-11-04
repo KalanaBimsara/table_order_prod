@@ -203,36 +203,37 @@ const ManagementDashboard: React.FC = () => {
           awaitingApprovalOrders.map((order) => (
             <Card 
               key={order.id} 
-              className="transition-all duration-300 bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
+              className="transition-all duration-300 bg-accent/50 border-accent"
             >
               <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
                   <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex flex-wrap items-center gap-2">
                       <Package size={18} />
-                      Order #{order.id.slice(-8)}
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 flex items-center gap-1">
+                      Order #{order.orderFormNumber}
+                      <Badge variant="secondary" className="bg-accent text-accent-foreground flex items-center gap-1">
                         <Package size={12} />
                         Ready to be Assembled
                       </Badge>
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="mt-2">
                       Customer: {order.customerName} • Created: {order.createdAt.toLocaleDateString()}
                       <span className="font-medium"> • Sales Person: </span> {order.salesPersonName || 'N/A'}
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => navigate(`/order-form/${order.id}`)}
                       variant="outline"
                       size="sm"
+                      className="w-full sm:w-auto"
                     >
                       <FileText size={16} className="mr-2" />
                       Order Form
                     </Button>
                     <Button
                       onClick={() => markAwaitingOrderReady(order.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                       size="sm"
                     >
                       <CheckCircle2 size={16} className="mr-2" />
@@ -315,33 +316,34 @@ const ManagementDashboard: React.FC = () => {
               key={order.id} 
               className={`transition-all duration-300 ${
                 order.deliveryStatus === 'ready' 
-                  ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' 
-                  : 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800'
+                  ? 'bg-accent/50 border-accent' 
+                  : 'bg-muted border-muted-foreground/20'
               }`}
             >
               <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
                   <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="text-lg flex flex-wrap items-center gap-2">
                       <Package size={18} />
                       Order # {order.orderFormNumber}
                       {order.deliveryStatus === 'ready' && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 flex items-center gap-1">
+                        <Badge variant="secondary" className="bg-accent text-accent-foreground flex items-center gap-1">
                           <CheckCircle2 size={12} />
                           Ready for Delivery
                         </Badge>
                       )}
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="mt-2">
                       Customer: {order.customerName} • Created: {order.createdAt.toLocaleDateString()}
                       <span className="font-medium"> • Sales Person: </span> {order.salesPersonName || 'N/A'}
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => navigate(`/order-form/${order.id}`)}
                       variant="outline"
                       size="sm"
+                      className="w-full sm:w-auto"
                     >
                       <FileText size={16} className="mr-2" />
                       Order Form
@@ -349,7 +351,7 @@ const ManagementDashboard: React.FC = () => {
                     {order.deliveryStatus === 'pending' && (
                       <Button
                         onClick={() => markAsReadyForDelivery(order.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                         size="sm"
                       >
                         <CheckCircle2 size={16} className="mr-2" />

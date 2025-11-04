@@ -37,6 +37,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   
   const watchWireHoles = form.watch(`tables.${index}.wireHoles`);
+  const watchSize = form.watch(`tables.${index}.size`);
 
   // Calculate the price based on the selected size
   const handleSizeChange = (value: string) => {
@@ -216,6 +217,31 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             </FormItem>
           )} 
         />
+
+        {/* L-Shape Orientation - Only show for L-shaped tables */}
+        {watchSize && watchSize.toLowerCase().includes('l') && (
+          <FormField
+            control={form.control}
+            name={`tables.${index}.lShapeOrientation`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>L-Shape Orientation</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select orientation" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="reverse">Reverse</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </div>
 
       {/* Customize Order Section */}

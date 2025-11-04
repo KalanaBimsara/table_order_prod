@@ -232,6 +232,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           wire_holes_comment: table.wireHolesComment ?? null,
           front_panel_size: table.frontPanelSize ?? null,
           front_panel_length: table.frontPanelLength ?? null,
+          l_shape_orientation: table.lShapeOrientation ?? null,
         }));
         
         const { error: tablesError } = await supabase
@@ -393,6 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           wire_holes_comment: table.wireHolesComment ?? null,
           front_panel_size: table.frontPanelSize ?? null,
           front_panel_length: table.frontPanelLength ?? null,
+          l_shape_orientation: table.lShapeOrientation ?? null,
         }));
         
         const { error: tablesError } = await supabase

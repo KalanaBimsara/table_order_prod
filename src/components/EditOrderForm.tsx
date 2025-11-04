@@ -30,7 +30,8 @@ const tableItemSchema = z.object({
   wireHoles: z.enum(['no wire holes', 'normal', 'special']).optional(),
   wireHolesComment: z.string().optional(),
   frontPanelSize: z.enum(['6', '12', '16', '24']).optional(),
-  frontPanelLength: z.number().optional()
+  frontPanelLength: z.number().optional(),
+  lShapeOrientation: z.enum(['normal', 'reverse']).optional()
 });
 
 // Define the overall form schema
@@ -77,7 +78,8 @@ export function EditOrderForm({ order, isOpen, onClose }: EditOrderFormProps) {
         wireHoles: table.wireHoles,
         wireHolesComment: table.wireHolesComment,
         frontPanelSize: table.frontPanelSize,
-        frontPanelLength: table.frontPanelLength
+        frontPanelLength: table.frontPanelLength,
+        lShapeOrientation: table.lShapeOrientation
       })),
       note: order.note || "",
       deliveryFee: order.deliveryFee || 0,
@@ -130,7 +132,8 @@ export function EditOrderForm({ order, isOpen, onClose }: EditOrderFormProps) {
           wireHoles: table.wireHoles,
           wireHolesComment: table.wireHolesComment,
           frontPanelSize: table.frontPanelSize,
-          frontPanelLength: table.frontPanelLength
+          frontPanelLength: table.frontPanelLength,
+          lShapeOrientation: table.lShapeOrientation
         })),
         note: values.note || "",
         totalPrice,
