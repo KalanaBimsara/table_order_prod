@@ -63,7 +63,9 @@ const OrderForm: React.FC = () => {
           legHeight: table.leg_height,
           wireHoles: table.wire_holes,
           wireHolesComment: table.wire_holes_comment,
-          lShapeOrientation: table.l_shape_orientation
+          lShapeOrientation: table.l_shape_orientation,
+          frontPanelSize: table.front_panel_size,
+          frontPanelLength: table.front_panel_length
         })) || [],
         note: data.note,
         status: data.status as any,
@@ -270,7 +272,9 @@ const OrderForm: React.FC = () => {
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Shape</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg height</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Color</th>
-                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L-Shape side</th>   
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L-Shape</th>
+                  
+                  
                 </tr>
               </thead>
               <tbody>
@@ -286,7 +290,7 @@ const OrderForm: React.FC = () => {
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>
                     {singleTable.lShapeOrientation ? singleTable.lShapeOrientation.charAt(0).toUpperCase() + singleTable.lShapeOrientation.slice(1) : ''}
                   </td>
-                  <td className="p-1 text-center">{singleTable.wireHolesComment || ''}</td>
+                  
                 </tr>
               </tbody>
             </table>
@@ -328,13 +332,25 @@ const OrderForm: React.FC = () => {
             {singleTable.wireHolesComment && (
               <div
                 style={{
-                  color: '#ff0000ff',
-                  fontWeight: '500',
-                  fontSize: '12px',
-                  marginTop: '4px'
+                  color: 'red',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  marginTop: '6px'
                 }}
               >
                 Wire Hole Comment: {singleTable.wireHolesComment}
+              </div>
+            )}
+            {(singleTable.frontPanelSize || singleTable.frontPanelLength) && (
+              <div
+                style={{
+                  color: 'red',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  marginTop: '6px'
+                }}
+              >
+                Front Panel: {singleTable.frontPanelSize || ''}{singleTable.frontPanelLength ? ` (Length: ${singleTable.frontPanelLength})` : ''}
               </div>
             )}
           </div>
