@@ -270,9 +270,7 @@ const OrderForm: React.FC = () => {
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Shape</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg height</th>
                   <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>Leg Color</th>
-                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L-Shape</th>
-                  <th className="p-1 font-medium text-center">Notes</th>
-                  
+                  <th className="border-r p-1 font-medium text-center" style={{ borderColor: colors.border }}>L-Shape side</th>   
                 </tr>
               </thead>
               <tbody>
