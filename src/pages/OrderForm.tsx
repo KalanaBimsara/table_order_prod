@@ -317,6 +317,48 @@ const OrderForm: React.FC = () => {
               <div className="font-medium">Authorized Signature</div>
             </div>
           </div>
+
+          {/* Customer Signature for Transport Copy */}
+          {copyLabel === "TRANSPORT COPY" && (
+            <div className="mt-3 pt-2 border-t" style={{ borderColor: colors.border }}>
+              <div className="text-xs mb-2" style={{ fontSize: '11px', lineHeight: '1.4' }}>
+                <strong>Customer Declaration:</strong> I confirm that I have received the goods in undamaged condition and have checked everything properly before the driver left the premises.
+              </div>
+              <div className="flex justify-between items-end">
+                <div className="flex-1">
+                  <div className="border-b mt-2 mr-4" style={{ borderColor: colors.border }}>&nbsp;</div>
+                  <div className="font-medium text-xs mt-1">Customer Signature</div>
+                </div>
+                <div className="flex-1">
+                  <div className="border-b mt-2 ml-4" style={{ borderColor: colors.border }}>&nbsp;</div>
+                  <div className="font-medium text-xs mt-1 text-right">Date</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Factory Assembler Signature for Production Copy */}
+          {copyLabel === "PRODUCTION COPY" && (
+            <div className="mt-3 pt-2 border-t" style={{ borderColor: colors.border }}>
+              <div className="flex justify-between items-end">
+                <div className="flex-1">
+                  <div className="text-xs mb-1 font-medium">Assembled By:</div>
+                  <div className="border-b mt-2 mr-4" style={{ borderColor: colors.border }}>&nbsp;</div>
+                  <div className="font-medium text-xs mt-1">Factory Assembler Name</div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs mb-1 font-medium">&nbsp;</div>
+                  <div className="border-b mt-2 mx-4" style={{ borderColor: colors.border }}>&nbsp;</div>
+                  <div className="font-medium text-xs mt-1 text-center">Signature</div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs mb-1 font-medium">&nbsp;</div>
+                  <div className="border-b mt-2 ml-4" style={{ borderColor: colors.border }}>&nbsp;</div>
+                  <div className="font-medium text-xs mt-1 text-right">Date</div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mt-2 pt-2 border-t text-xs space-y-1" style={{ borderColor: colors.border }}>
             {order.note && (
               <div

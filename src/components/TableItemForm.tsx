@@ -55,10 +55,36 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   };
 
   const handleCustomSizeSubmit = () => {
-    if (/^\d+\s*x\s*\d+$/.test(customSize) && customPrice) {
-      form.setValue(`tables.${index}.size`, customSize);
-      form.setValue(`tables.${index}.price`, parseFloat(customPrice));
+    if (!customSize || !customPrice) {
+      form.setError(`tables.${index}.size`, {
+        type: 'manual',
+        message: 'Please enter both custom size and price'
+      });
+      return;
     }
+    
+    if (!/^\d+\s*x\s*\d+$/.test(customSize.trim())) {
+      form.setError(`tables.${index}.size`, {
+        type: 'manual',
+        message: 'Invalid size format. Use format like "48x24"'
+      });
+      return;
+    }
+    
+    const price = parseFloat(customPrice);
+    if (isNaN(price) || price <= 0) {
+      form.setError(`tables.${index}.price`, {
+        type: 'manual',
+        message: 'Please enter a valid price greater than 0'
+      });
+      return;
+    }
+    
+    form.setValue(`tables.${index}.size`, customSize.trim());
+    form.setValue(`tables.${index}.price`, price);
+    form.clearErrors(`tables.${index}.size`);
+    form.clearErrors(`tables.${index}.price`);
+    setShowCustomSize(false);
   };
 
   return (
@@ -68,9 +94,9 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           control={form.control} 
           name={`tables.${index}.size`} 
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Size</FormLabel>
-              <Select 
+          <FormItem>
+              <FormLabel>Size *</FormLabel>
+              <Select
                 onValueChange={(value) => {
                   field.onChange(value);
                   handleSizeChange(value);
@@ -103,7 +129,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
 
         {showCustomSize && (
           <>
-            <div className="space-y-2">
+            <div className="col-span-2 space-y-2">
               <FormLabel>Custom Size *</FormLabel>
               <Input
                 placeholder="e.g., 48x24"
@@ -121,30 +147,34 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                 onBlur={() => {
                   // Auto-trim and normalize spaces around 'x'
                   if (customSize) {
-                    const cleaned = customSize.replace(/\s*/g, '').replace(/x/i, ' x ');
+                    const cleaned = customSize.replace(/\s*/g, '').replace(/x/i, 'x');
                     setCustomSize(cleaned);
                   }
                 }}
               />
+              <p className="text-xs text-muted-foreground">Enter size in format: width x length (e.g., 48x24)</p>
             </div>
-            <div className="space-y-2">
-              <FormLabel>Custom Price *</FormLabel>
+            <div className="col-span-2 space-y-2">
+              <FormLabel>Custom Price (LKR) *</FormLabel>
               <div className="flex gap-2">
                 <Input
                   type="number"
                   placeholder="Enter price"
                   value={customPrice}
                   required
+                  min="1"
                   onChange={(e) => setCustomPrice(e.target.value)}
                 />
                 <Button 
                   type="button" 
                   onClick={handleCustomSizeSubmit}
                   size="sm"
+                  className="whitespace-nowrap"
                 >
-                  Set
+                  Set Custom Size
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">Click "Set Custom Size" after entering both values</p>
             </div>
           </>
         )}
@@ -154,7 +184,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           name={`tables.${index}.quantity`} 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Quantity</FormLabel>
+              <FormLabel>Quantity *</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
@@ -173,7 +203,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           name={`tables.${index}.topColour`} 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Top Colour</FormLabel>
+              <FormLabel>Top Colour *</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -198,7 +228,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           name={`tables.${index}.frameColour`} 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Leg Colour</FormLabel>
+              <FormLabel>Leg Colour *</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -225,7 +255,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.lShapeOrientation`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>L-Shape Orientation</FormLabel>
+                <FormLabel>L-Shape Orientation *</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
@@ -263,7 +293,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legSize`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Leg Size</FormLabel>
+                <FormLabel>Leg Size *</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -295,7 +325,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legShape`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Leg Shape</FormLabel>
+                <FormLabel>Leg Shape *</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -327,7 +357,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legHeight`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Leg Height</FormLabel>
+                <FormLabel>Leg Height *</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Enter leg height (e.g., 30 inches)"
@@ -345,7 +375,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.wireHoles`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Wire Holes</FormLabel>
+                <FormLabel>Wire Holes *</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}

@@ -18,20 +18,38 @@ import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPane
 // Define schema for a single table item
 const tableItemSchema = z.object({
   id: z.string(),
-  size: z.string(),
-  topColour: z.string(),
-  frameColour: z.string(),
+  size: z.string().min(1, { message: "Table size is required" }),
+  topColour: z.string().min(1, { message: "Top colour is required" }),
+  frameColour: z.string().min(1, { message: "Frame colour is required" }),
   colour: z.string(), // Keep for backward compatibility
   quantity: z.number().int().positive().min(1, { message: "Quantity must be at least 1" }),
-  price: z.number(),
-  legSize: z.enum(['1.5x1.5', '3x1.5']).optional(),
-  legShape: z.enum(['O Shape', 'U shape']).optional(),
-  legHeight: z.string().optional(),
-  wireHoles: z.enum(['no wire holes', 'normal', 'special']).optional(),
+  price: z.number().positive({ message: "Price is required and must be greater than 0" }),
+  legSize: z.enum(['1.5x1.5', '3x1.5'], { required_error: "Leg size is required" }),
+  legShape: z.enum(['O Shape', 'U shape'], { required_error: "Leg shape is required" }),
+  legHeight: z.string().min(1, { message: "Leg height is required" }),
+  wireHoles: z.enum(['no wire holes', 'normal', 'special'], { required_error: "Wire holes selection is required" }),
   wireHolesComment: z.string().optional(),
   frontPanelSize: z.enum(['6', '12', '16', '24']).optional(),
   frontPanelLength: z.number().optional(),
   lShapeOrientation: z.enum(['normal', 'reverse']).optional()
+}).refine((data) => {
+  // If size is "custom", price must be greater than 0 (custom price entered)
+  if (data.size === 'custom' && (!data.price || data.price <= 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Custom price is required for custom size tables",
+  path: ["price"]
+}).refine((data) => {
+  // If size contains 'L' (L-shaped table), orientation is required
+  if (data.size && data.size.toLowerCase().includes('l') && !data.lShapeOrientation) {
+    return false;
+  }
+  return true;
+}, {
+  message: "L-shape orientation is required for L-shaped tables",
+  path: ["lShapeOrientation"]
 });
 
 // Define the overall form schema
