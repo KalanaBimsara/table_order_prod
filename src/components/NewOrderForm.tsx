@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, FormProvider } from 'react-hook-form';
 import * as z from 'zod';
@@ -16,6 +16,17 @@ import { Plus } from 'lucide-react';
 import TableItemForm from './TableItemForm';
 import { TableItem } from '@/types/order';
 import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPanelCost } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Define schema for a single table item
 const tableItemSchema = z.object({
@@ -27,7 +38,7 @@ const tableItemSchema = z.object({
   quantity: z.number().int().positive().min(1, { message: "Quantity must be at least 1" }),
   price: z.number().positive({ message: "Price is required and must be greater than 0" }),
   // Customization fields - all required
-  legSize: z.enum(['1.5x1.5', '3x1.5'], { required_error: "Leg size is required" }),
+  legSize: z.enum(['1.5x1.5','2x2', '3x1.5'], { required_error: "Leg size is required" }),
   legShape: z.enum(['O Shape', 'U shape'], { required_error: "Leg shape is required" }),
   legHeight: z.string().min(1, { message: "Leg height is required" }),
   wireHoles: z.enum(['no wire holes', 'normal', 'special'], { required_error: "Wire holes selection is required" }),
@@ -73,6 +84,8 @@ type OrderFormValues = z.infer<typeof formSchema>;
 
 export function NewOrderForm() {
   const { addOrder } = useApp();
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null);
   
   const form = useFormProvider();
 
@@ -98,10 +111,27 @@ export function NewOrderForm() {
     return tablesCost + additionalTableCosts + watchDeliveryFee + watchAdditionalCharges;
   }, [tablesCost, additionalTableCosts, watchDeliveryFee, watchAdditionalCharges]);
 
+  // Check for existing orders with same contact number
+  async function checkDuplicateOrder(contactNumber: string) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, status')
+        .eq('contact_number', contactNumber)
+        .in('status', ['pending', 'assigned']);
+
+      if (error) throw error;
+      return data && data.length > 0;
+    } catch (error) {
+      console.error('Error checking for duplicate orders:', error);
+      return false;
+    }
+  }
+
   // Handle form submission
   async function onSubmit(values: OrderFormValues) {
     try {
-      // Prepare order data with the tables - ensure all fields are non-optional
+      // Prepare order data
       const orderData = {
         customerName: values.customerName,
         customerDistrict: values.customerDistrict,
@@ -114,7 +144,7 @@ export function NewOrderForm() {
           size: table.size,
           topColour: table.topColour,
           frameColour: table.frameColour,
-          colour: table.colour, // For compatibility
+          colour: table.colour,
           quantity: table.quantity,
           price: table.price,
           legSize: table.legSize,
@@ -131,7 +161,27 @@ export function NewOrderForm() {
         deliveryFee: values.deliveryFee || 0,
         additionalCharges: values.additionalCharges || 0
       };
+
+      // Check for duplicate orders
+      const hasDuplicate = await checkDuplicateOrder(values.contactNumber);
       
+      if (hasDuplicate) {
+        setPendingOrderData(orderData);
+        setShowDuplicateDialog(true);
+        return;
+      }
+
+      // No duplicate, proceed with submission
+      await submitOrder(orderData);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('An error occurred when creating your order');
+    }
+  }
+
+  // Submit order function
+  async function submitOrder(orderData: any) {
+    try {
       await addOrder(orderData);
       form.reset({
         customerName: "",
@@ -147,9 +197,37 @@ export function NewOrderForm() {
       });
       toast.success("Order created successfully!");
     } catch (error) {
-      console.error('Error submitting form:', error);
-      toast.error('An error occurred when creating your order');
+      console.error('Error submitting order:', error);
+      toast.error('Failed to create order');
     }
+  }
+
+  // Handle duplicate order confirmation
+  function handleDuplicateConfirm() {
+    if (pendingOrderData) {
+      submitOrder(pendingOrderData);
+      setPendingOrderData(null);
+    }
+    setShowDuplicateDialog(false);
+  }
+
+  // Handle duplicate order cancellation
+  function handleDuplicateCancel() {
+    form.reset({
+      customerName: "",
+      customerDistrict: "",
+      address: "",
+      contactNumber: "",
+      deliveryDate: "",
+      deliveryType: undefined,
+      tables: [createEmptyTable()],
+      note: "",
+      deliveryFee: 0,
+      additionalCharges: 0,
+    });
+    setPendingOrderData(null);
+    setShowDuplicateDialog(false);
+    toast.info("Order form cleared");
   }
 
 // Create a new empty table with default values
@@ -428,6 +506,26 @@ const createEmptyTable = (): TableItem => ({
           </form>
         </FormProvider>
       </CardContent>
+
+      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Order Already Exists</AlertDialogTitle>
+            <AlertDialogDescription>
+              An order with this contact number already exists with pending or assigned status. 
+              Do you want to submit this order again?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDuplicateCancel}>
+              No, Clear Form
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDuplicateConfirm}>
+              Yes, Submit Again
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

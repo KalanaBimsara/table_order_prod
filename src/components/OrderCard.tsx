@@ -161,11 +161,11 @@ const OrderCard: React.FC<OrderCardProps> = ({
   const getStatusBadge = () => {
     switch (order.status) {
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 text-sm md:text-base px-2 md:px-3 py-1">Pending</Badge>;
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 text-sm md:text-base px-2 md:px-3 py-1">Pending</Badge>;
       case 'assigned':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 text-sm md:text-base px-2 md:px-3 py-1">Assigned</Badge>;
+        return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-sm md:text-base px-2 md:px-3 py-1">Assigned</Badge>;
       case 'completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 text-sm md:text-base px-2 md:px-3 py-1">Completed</Badge>;
+        return <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 text-sm md:text-base px-2 md:px-3 py-1">Completed</Badge>;
       default:
         return null;
     }
@@ -187,7 +187,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <div className="flex flex-col sm:items-end gap-1">
             {/* Order number top-right */}
             {order.order_form_number && (
-              <span className="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full shadow-sm">
+              <span className="text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full shadow-sm">
                 #{order.order_form_number}
               </span>
             )}
@@ -217,7 +217,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </div>
             
             <div className="space-y-3">
-              {order.tables && order.tables.length > 0 ? order.tables.map((table, index) => <div key={table.id || index} className="border p-2 md:p-4 rounded-lg bg-gray-50">
+              {order.tables && order.tables.length > 0 ? order.tables.map((table, index) => <div key={table.id || index} className="border border-border p-2 md:p-4 rounded-lg bg-muted/50">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm md:text-base">
                       <div className="flex items-center gap-2">
                         <Package size={isMobile ? 16 : 20} className="flex-shrink-0 text-muted-foreground" />
@@ -242,7 +242,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
                     
                     {/* Customization details */}
                     {(table.legSize || table.legHeight || table.wireHoles) && (
-                      <div className="mt-3 pt-2 border-t border-gray-200">
+                      <div className="mt-3 pt-2 border-t border-border">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs md:text-sm">
                           {table.legSize && (
                             <div className="text-muted-foreground">
@@ -279,7 +279,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           
           {order.note && <div className="flex items-center gap-2 mt-3">
               <StickyNote size={isMobile ? 18 : 24} className="flex-shrink-0 text-muted-foreground" />
-              <span className="min-w-0 whitespace-normal break-all sm:break-words text-[#ff0000] font-bold text-lg">{order.note}</span>
+              <span className="min-w-0 whitespace-normal break-all sm:break-words text-red-600 dark:text-red-400 font-bold text-lg">{order.note}</span>
             </div>}
           
           <div className="flex items-center gap-2 mt-3">
@@ -292,7 +292,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           {showSalesPerson && order.salesPersonName && (
             <div className="flex items-center gap-2 mt-3">
               <UserPlus size={isMobile ? 18 : 24} className="flex-shrink-0 text-muted-foreground" />
-              <span className="font-medium text-green-700">
+              <span className="font-medium text-green-600 dark:text-green-400">
                 Sales Person: {order.salesPersonName}
               </span>
             </div>
@@ -300,7 +300,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
 
           {(userRole === 'admin' || userRole === 'delivery') && order.createdBy && !showSalesPerson && <div className="flex items-center gap-2 mt-3">
               <UserPlus size={isMobile ? 18 : 24} className="flex-shrink-0 text-muted-foreground" />
-              <span className="font-medium text-green-700">
+              <span className="font-medium text-green-600 dark:text-green-400">
                 Sales Person: {creatorName || "Loading..."}
               </span>
             </div>}
@@ -308,7 +308,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           {/* Update condition to check both possible field names */}
           {(order.status === 'assigned' || order.status === 'completed') && (order.assignedTo || order.delivery_person_id) && <div className="flex items-center gap-2 mt-3">
               <User size={isMobile ? 18 : 24} className="flex-shrink-0 text-muted-foreground" />
-              <span className="font-medium text-sky-700 text-base">
+              <span className="font-medium text-sky-600 dark:text-sky-400 text-base">
                 Delivery Assigned to: {deliveryPersonName || "Loading..."}
               </span>
             </div>}

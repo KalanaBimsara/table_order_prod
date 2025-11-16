@@ -7,6 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 // Calculate additional cost for leg size
 export function calculateLegSizeCost(legSize?: string): number {
+  if (legSize === '2x2') {
+    return 1500;
+  }
   if (legSize === '3x1.5') {
     return 3000;
   }

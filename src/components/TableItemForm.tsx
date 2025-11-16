@@ -32,8 +32,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
 }) => {
   const form = useFormContext();
   const [showCustomSize, setShowCustomSize] = useState(false);
-  const [customSize, setCustomSize] = useState('');
-  const [customPrice, setCustomPrice] = useState('');
+  const [isCustomSizeSet, setIsCustomSizeSet] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   
   const watchWireHoles = form.watch(`tables.${index}.wireHoles`);
@@ -43,10 +42,12 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   const handleSizeChange = (value: string) => {
     if (value === 'custom') {
       setShowCustomSize(true);
+      setIsCustomSizeSet(false);
       form.setValue(`tables.${index}.size`, '');
       form.setValue(`tables.${index}.price`, 0);
     } else {
       setShowCustomSize(false);
+      setIsCustomSizeSet(false);
       const selectedSize = tableSizeOptions.find(option => option.value === value);
       if (selectedSize) {
         form.setValue(`tables.${index}.price`, selectedSize.price);
@@ -54,38 +55,6 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
     }
   };
 
-  const handleCustomSizeSubmit = () => {
-    if (!customSize || !customPrice) {
-      form.setError(`tables.${index}.size`, {
-        type: 'manual',
-        message: 'Please enter both custom size and price'
-      });
-      return;
-    }
-    
-    if (!/^\d+\s*x\s*\d+$/.test(customSize.trim())) {
-      form.setError(`tables.${index}.size`, {
-        type: 'manual',
-        message: 'Invalid size format. Use format like "48x24"'
-      });
-      return;
-    }
-    
-    const price = parseFloat(customPrice);
-    if (isNaN(price) || price <= 0) {
-      form.setError(`tables.${index}.price`, {
-        type: 'manual',
-        message: 'Please enter a valid price greater than 0'
-      });
-      return;
-    }
-    
-    form.setValue(`tables.${index}.size`, customSize.trim());
-    form.setValue(`tables.${index}.price`, price);
-    form.clearErrors(`tables.${index}.size`);
-    form.clearErrors(`tables.${index}.price`);
-    setShowCustomSize(false);
-  };
 
   return (
     <div className="border p-4 rounded-md space-y-4 relative">
@@ -102,7 +71,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                   handleSizeChange(value);
                 }} 
                 defaultValue={field.value} 
-                value={showCustomSize ? 'custom' : field.value}
+                value={showCustomSize || isCustomSizeSet ? 'custom' : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -133,7 +102,6 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
               <FormLabel>Custom Size *</FormLabel>
               <Input
                 placeholder="e.g., 48x24"
-                value={customSize}
                 required
                 onChange={(e) => {
                   const value = e.target.value;
@@ -141,14 +109,9 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                   const validPattern = /^[0-9\s]*x?[0-9\s]*$/i;
 
                   if (validPattern.test(value)) {
-                    setCustomSize(value);
-                  }
-                }}
-                onBlur={() => {
-                  // Auto-trim and normalize spaces around 'x'
-                  if (customSize) {
-                    const cleaned = customSize.replace(/\s*/g, '').replace(/x/i, 'x');
-                    setCustomSize(cleaned);
+                    const cleaned = value.replace(/\s*/g, '').replace(/x/i, 'x');
+                    form.setValue(`tables.${index}.size`, cleaned);
+                    setIsCustomSizeSet(true);
                   }
                 }}
               />
@@ -156,25 +119,18 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             </div>
             <div className="col-span-2 space-y-2">
               <FormLabel>Custom Price (LKR) *</FormLabel>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  placeholder="Enter price"
-                  value={customPrice}
-                  required
-                  min="1"
-                  onChange={(e) => setCustomPrice(e.target.value)}
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleCustomSizeSubmit}
-                  size="sm"
-                  className="whitespace-nowrap"
-                >
-                  Set Custom Size
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">Click "Set Custom Size" after entering both values</p>
+              <Input
+                type="number"
+                placeholder="Enter price"
+                required
+                min="1"
+                onChange={(e) => {
+                  const price = parseFloat(e.target.value);
+                  if (!isNaN(price) && price > 0) {
+                    form.setValue(`tables.${index}.price`, price);
+                  }
+                }}
+              />
             </div>
           </>
         )}
@@ -249,7 +205,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
         />
 
         {/* L-Shape Orientation - Only show for L-shaped tables */}
-        {watchSize && watchSize.toLowerCase().includes('l') && (
+        {watchSize && watchSize.toUpperCase().startsWith('L-') && (
           <FormField
             control={form.control}
             name={`tables.${index}.lShapeOrientation`}
@@ -307,8 +263,14 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                       </label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="3x1.5" id={`leg-size-2-${index}`} />
+                      <RadioGroupItem value="2x2" id={`leg-size-2-${index}`} />
                       <label htmlFor={`leg-size-2-${index}`} className="text-sm font-normal cursor-pointer">
+                        2" x 2"
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="3x1.5" id={`leg-size-3-${index}`} />
+                      <label htmlFor={`leg-size-3-${index}`} className="text-sm font-normal cursor-pointer">
                         3" x 1.5"
                       </label>
                     </div>

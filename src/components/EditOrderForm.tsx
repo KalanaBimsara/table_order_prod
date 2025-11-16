@@ -24,7 +24,7 @@ const tableItemSchema = z.object({
   colour: z.string(), // Keep for backward compatibility
   quantity: z.number().int().positive().min(1, { message: "Quantity must be at least 1" }),
   price: z.number().positive({ message: "Price is required and must be greater than 0" }),
-  legSize: z.enum(['1.5x1.5', '3x1.5'], { required_error: "Leg size is required" }),
+  legSize: z.enum(['1.5x1.5', '2x2', '3x1.5'], { required_error: "Leg size is required" }),
   legShape: z.enum(['O Shape', 'U shape'], { required_error: "Leg shape is required" }),
   legHeight: z.string().min(1, { message: "Leg height is required" }),
   wireHoles: z.enum(['no wire holes', 'normal', 'special'], { required_error: "Wire holes selection is required" }),

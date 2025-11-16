@@ -123,7 +123,7 @@
 }
 
 .order-card {
-  @apply bg-white shadow-md rounded-lg p-4 mb-4 border-l-4 text-lg leading-relaxed;
+  @apply bg-card text-card-foreground shadow-md rounded-lg p-4 mb-4 border-l-4 text-lg leading-relaxed;
 }
 
 .order-pending {

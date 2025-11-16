@@ -7,7 +7,7 @@ export type TableItem = {
   quantity: number,
   price: number,
   // Customization fields
-  legSize?: '1.5x1.5' | '3x1.5',
+  legSize?: '1.5x1.5' | '2x2' | '3x1.5',
   legShape?: 'O Shape' | 'U shape',
   legHeight?: string,
   wireHoles?: 'no wire holes' | 'normal' | 'special',
