@@ -449,9 +449,9 @@ const OrderForm: React.FC = () => {
       <div className="container py-8 space-y-8">
         {order.tables.map((table, tableIndex) => (
           <React.Fragment key={tableIndex}>
-            <FormCopy copyNumber={1} colorName="cyan" copyLabel="TRANSPORT COPY" singleTable={table} tableIndex={tableIndex} />
             <FormCopy copyNumber={2} colorName="magenta" copyLabel="ACCOUNT COPY" singleTable={table} tableIndex={tableIndex} />
             <FormCopy copyNumber={3} colorName="yellow" copyLabel="GATE PASS" singleTable={table} tableIndex={tableIndex} />
+            <FormCopy copyNumber={1} colorName="cyan" copyLabel="TRANSPORT COPY" singleTable={table} tableIndex={tableIndex} />
             <FormCopy copyNumber={4} colorName="black" copyLabel="PRODUCTION COPY" singleTable={table} tableIndex={tableIndex} />
           </React.Fragment>
         ))}

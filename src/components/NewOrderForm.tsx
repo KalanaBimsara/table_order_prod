@@ -513,7 +513,7 @@ const createEmptyTable = (): TableItem => ({
             <AlertDialogTitle>Order Already Exists</AlertDialogTitle>
             <AlertDialogDescription>
               An order with this contact number already exists with pending or assigned status. 
-              Do you want to submit this order again?
+              Do you want to submit another order?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -521,7 +521,7 @@ const createEmptyTable = (): TableItem => ({
               No, Clear Form
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDuplicateConfirm}>
-              Yes, Submit Again
+              Yes, Submit new order
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
