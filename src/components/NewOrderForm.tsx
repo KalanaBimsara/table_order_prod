@@ -47,17 +47,9 @@ const tableItemSchema = z.object({
   frontPanelLength: z.number().optional(),
   lShapeOrientation: z.enum(['normal', 'reverse']).optional()
 }).refine((data) => {
-  // If size is "custom", price must be greater than 0 (custom price entered)
-  if (data.size === 'custom' && (!data.price || data.price <= 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Custom price is required for custom size tables",
-  path: ["price"]
-}).refine((data) => {
   // If size contains 'L' (L-shaped table), orientation is required
-  if (data.size && data.size.toLowerCase().includes('l') && !data.lShapeOrientation) {
+  // But exclude "L-" prefix check to avoid false matches with custom sizes
+  if (data.size && data.size.toUpperCase().startsWith('L-') && !data.lShapeOrientation) {
     return false;
   }
   return true;

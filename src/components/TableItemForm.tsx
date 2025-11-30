@@ -43,13 +43,15 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
     if (value === 'custom') {
       setShowCustomSize(true);
       setIsCustomSizeSet(false);
-      form.setValue(`tables.${index}.size`, '');
+      // Set to 'custom' to pass validation
+      form.setValue(`tables.${index}.size`, 'custom');
       form.setValue(`tables.${index}.price`, 0);
     } else {
       setShowCustomSize(false);
       setIsCustomSizeSet(false);
       const selectedSize = tableSizeOptions.find(option => option.value === value);
       if (selectedSize) {
+        form.setValue(`tables.${index}.size`, value);
         form.setValue(`tables.${index}.price`, selectedSize.price);
       }
     }
@@ -101,21 +103,25 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             <div className="col-span-2 space-y-2">
               <FormLabel>Custom Size *</FormLabel>
               <Input
-                placeholder="e.g., 48x24"
+                placeholder="e.g., 60x36"
                 required
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Allow only numbers, 'x', and spaces — e.g., 48 x 24
+                  // Allow only numbers, 'x', and spaces — e.g., 60 x 36
                   const validPattern = /^[0-9\s]*x?[0-9\s]*$/i;
 
                   if (validPattern.test(value)) {
-                    const cleaned = value.replace(/\s*/g, '').replace(/x/i, 'x');
-                    form.setValue(`tables.${index}.size`, cleaned);
-                    setIsCustomSizeSet(true);
+                    const cleaned = value.replace(/\s*/g, '').toLowerCase().replace(/x/gi, 'x');
+                    // Only update if we have both dimensions
+                    if (cleaned.includes('x') && cleaned.split('x').length === 2 && 
+                        cleaned.split('x')[0] && cleaned.split('x')[1]) {
+                      form.setValue(`tables.${index}.size`, cleaned, { shouldValidate: true });
+                      setIsCustomSizeSet(true);
+                    }
                   }
                 }}
               />
-              <p className="text-xs text-muted-foreground">Enter size in format: width x length (e.g., 48x24)</p>
+              <p className="text-xs text-muted-foreground">Enter size in format: width x length (e.g., 60x36)</p>
             </div>
             <div className="col-span-2 space-y-2">
               <FormLabel>Custom Price (LKR) *</FormLabel>
@@ -127,7 +133,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
                 onChange={(e) => {
                   const price = parseFloat(e.target.value);
                   if (!isNaN(price) && price > 0) {
-                    form.setValue(`tables.${index}.price`, price);
+                    form.setValue(`tables.${index}.price`, price, { shouldValidate: true });
                   }
                 }}
               />
