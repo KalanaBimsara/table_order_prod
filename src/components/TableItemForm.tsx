@@ -34,6 +34,8 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   const [showCustomSize, setShowCustomSize] = useState(false);
   const [isCustomSizeSet, setIsCustomSizeSet] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
+  const [customLength, setCustomLength] = useState('');
+  const [customWidth, setCustomWidth] = useState('');
   
   const watchWireHoles = form.watch(`tables.${index}.wireHoles`);
   const watchSize = form.watch(`tables.${index}.size`);
@@ -43,12 +45,16 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
     if (value === 'custom') {
       setShowCustomSize(true);
       setIsCustomSizeSet(false);
+      setCustomLength('');
+      setCustomWidth('');
       // Set to 'custom' to pass validation
       form.setValue(`tables.${index}.size`, 'custom');
       form.setValue(`tables.${index}.price`, 0);
     } else {
       setShowCustomSize(false);
       setIsCustomSizeSet(false);
+      setCustomLength('');
+      setCustomWidth('');
       const selectedSize = tableSizeOptions.find(option => option.value === value);
       if (selectedSize) {
         form.setValue(`tables.${index}.size`, value);
@@ -61,6 +67,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
   return (
     <div className="border p-4 rounded-md space-y-4 relative">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Size field - full width on mobile, half on desktop */}
         <FormField 
           control={form.control} 
           name={`tables.${index}.size`} 
@@ -102,26 +109,46 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           <>
             <div className="col-span-2 space-y-2">
               <FormLabel>Custom Size *</FormLabel>
-              <Input
-                placeholder="e.g., 60x36"
-                required
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow only numbers, 'x', and spaces — e.g., 60 x 36
-                  const validPattern = /^[0-9\s]*x?[0-9\s]*$/i;
-
-                  if (validPattern.test(value)) {
-                    const cleaned = value.replace(/\s*/g, '').toLowerCase().replace(/x/gi, 'x');
-                    // Only update if we have both dimensions
-                    if (cleaned.includes('x') && cleaned.split('x').length === 2 && 
-                        cleaned.split('x')[0] && cleaned.split('x')[1]) {
-                      form.setValue(`tables.${index}.size`, cleaned, { shouldValidate: true });
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  placeholder="Width"
+                  required
+                  value={customWidth}
+                  onChange={(e) => {
+                    const width = e.target.value;
+                    setCustomWidth(width);
+                    if (width && customLength) {
+                      const size = `${width}x${customLength}`;
+                      form.setValue(`tables.${index}.size`, size, { shouldValidate: true });
                       setIsCustomSizeSet(true);
+                    } else if (!width || !customLength) {
+                      setIsCustomSizeSet(false);
                     }
-                  }
-                }}
-              />
-              <p className="text-xs text-muted-foreground">Enter size in format: width x length (e.g., 60x36)</p>
+                  }}
+                  className="flex-1"
+                />
+                <span className="text-lg font-semibold">X</span>
+                <Input
+                  type="number"
+                  placeholder="Length"
+                  required
+                  value={customLength}
+                  onChange={(e) => {
+                    const length = e.target.value;
+                    setCustomLength(length);
+                    if (length && customWidth) {
+                      const size = `${customWidth}x${length}`;
+                      form.setValue(`tables.${index}.size`, size, { shouldValidate: true });
+                      setIsCustomSizeSet(true);
+                    } else if (!length || !customWidth) {
+                      setIsCustomSizeSet(false);
+                    }
+                  }}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Enter dimensions: width x length (e.g., 60 x 36)</p>
             </div>
             <div className="col-span-2 space-y-2">
               <FormLabel>Custom Price (LKR) *</FormLabel>
@@ -141,74 +168,86 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
           </>
         )}
 
-        <FormField 
-          control={form.control} 
-          name={`tables.${index}.quantity`} 
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quantity *</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  min="1" 
-                  {...field} 
-                  onChange={e => field.onChange(parseInt(e.target.value) || 1)} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} 
-        />
+        {/* Quantity, Top Colour, and Leg Colour - stacked on mobile, side by side on desktop */}
+        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField 
+            control={form.control} 
+            name={`tables.${index}.quantity`} 
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantity *</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(parseInt(value))} 
+                  value={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select quantity" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} 
+          />
 
-        <FormField 
-          control={form.control} 
-          name={`tables.${index}.topColour`} 
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Top Colour *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select colour" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {colourOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} 
-        />
+          <FormField 
+            control={form.control} 
+            name={`tables.${index}.topColour`} 
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Top Colour *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select colour" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {colourOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} 
+          />
 
-        <FormField 
-          control={form.control} 
-          name={`tables.${index}.frameColour`} 
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Leg Colour *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select colour" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {frameColourOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} 
-        />
+          <FormField 
+            control={form.control} 
+            name={`tables.${index}.frameColour`} 
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Leg Colour *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select colour" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {frameColourOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} 
+          />
+        </div>
 
         {/* L-Shape Orientation - Only show for L-shaped tables */}
         {watchSize && watchSize.toUpperCase().startsWith('L-') && (
