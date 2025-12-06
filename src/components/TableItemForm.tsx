@@ -176,23 +176,16 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Quantity *</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(parseInt(value))} 
-                  value={field.value?.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select quantity" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="1" 
+                    placeholder="Enter quantity"
+                    {...field} 
+                    onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) || 1 : 1)} 
+                    value={field.value || ''}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} 
