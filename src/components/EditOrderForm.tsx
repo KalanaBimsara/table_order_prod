@@ -24,10 +24,10 @@ const tableItemSchema = z.object({
   colour: z.string(), // Keep for backward compatibility
   quantity: z.number().int().positive().min(1, { message: "Quantity must be at least 1" }),
   price: z.number().positive({ message: "Price is required and must be greater than 0" }),
-  legSize: z.enum(['1.5x1.5', '2x2', '3x1.5'], { required_error: "Leg size is required" }),
-  legShape: z.enum(['O Shape', 'U shape'], { required_error: "Leg shape is required" }),
-  legHeight: z.string().min(1, { message: "Leg height is required" }),
-  wireHoles: z.enum(['no wire holes', 'normal', 'special'], { required_error: "Wire holes selection is required" }),
+  legSize: z.enum(['1.5x1.5', '2x2', '3x1.5']).optional(),
+  legShape: z.enum(['O Shape', 'U shape']).optional(),
+  legHeight: z.string().optional(),
+  wireHoles: z.enum(['no wire holes', 'normal', 'special']).optional(),
   wireHolesComment: z.string().optional(),
   frontPanelSize: z.enum(['6', '12', '16', '24']).optional(),
   frontPanelLength: z.number().optional(),
@@ -42,8 +42,8 @@ const tableItemSchema = z.object({
   message: "Custom price is required for custom size tables",
   path: ["price"]
 }).refine((data) => {
-  // If size contains 'L' (L-shaped table), orientation is required
-  if (data.size && data.size.toLowerCase().includes('l') && !data.lShapeOrientation) {
+  // If size contains 'L-' (L-shaped table), orientation is required
+  if (data.size && data.size.toUpperCase().startsWith('L-') && !data.lShapeOrientation) {
     return false;
   }
   return true;
@@ -85,19 +85,19 @@ export function EditOrderForm({ order, isOpen, onClose }: EditOrderFormProps) {
       tables: order.tables.map(table => ({
         id: table.id,
         size: table.size,
-        topColour: table.topColour,
-        frameColour: table.frameColour,
-        colour: table.colour,
+        topColour: table.topColour || table.colour || '',
+        frameColour: table.frameColour || table.colour || '',
+        colour: table.colour || '',
         quantity: table.quantity,
         price: table.price,
-        legSize: table.legSize,
-        legShape: table.legShape,
-        legHeight: table.legHeight,
-        wireHoles: table.wireHoles,
-        wireHolesComment: table.wireHolesComment,
-        frontPanelSize: table.frontPanelSize,
-        frontPanelLength: table.frontPanelLength,
-        lShapeOrientation: table.lShapeOrientation
+        legSize: table.legSize || undefined,
+        legShape: table.legShape || undefined,
+        legHeight: table.legHeight || undefined,
+        wireHoles: table.wireHoles || undefined,
+        wireHolesComment: table.wireHolesComment || undefined,
+        frontPanelSize: table.frontPanelSize || undefined,
+        frontPanelLength: table.frontPanelLength || undefined,
+        lShapeOrientation: table.lShapeOrientation || undefined
       })),
       note: order.note || "",
       deliveryFee: order.deliveryFee || 0,

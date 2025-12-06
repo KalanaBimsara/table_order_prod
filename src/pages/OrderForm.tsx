@@ -104,6 +104,14 @@ const OrderForm: React.FC = () => {
   };
 
   const handlePrint = () => {
+    // Mark order as printed in localStorage
+    if (orderId) {
+      const printedOrders = JSON.parse(localStorage.getItem('printedOrders') || '[]');
+      if (!printedOrders.includes(orderId)) {
+        printedOrders.push(orderId);
+        localStorage.setItem('printedOrders', JSON.stringify(printedOrders));
+      }
+    }
     window.print();
   };
 

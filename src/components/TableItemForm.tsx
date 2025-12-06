@@ -250,7 +250,7 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>L-Shape Orientation *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select orientation" />
@@ -287,11 +287,11 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legSize`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Leg Size *</FormLabel>
+                <FormLabel>Leg Size</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    value={field.value}
+                    value={field.value || ''}
                     className="flex flex-col space-y-2"
                   >
                     <div className="flex items-center space-x-2">
@@ -325,11 +325,11 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legShape`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Leg Shape *</FormLabel>
+                <FormLabel>Leg Shape</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    value={field.value}
+                    value={field.value || ''}
                     className="flex flex-col space-y-2"
                   >
                     <div className="flex items-center space-x-2">
@@ -357,11 +357,12 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.legHeight`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Leg Height *</FormLabel>
+                <FormLabel>Leg Height</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Enter leg height (e.g., 30 inches)"
                     {...field}
+                    value={field.value || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -375,11 +376,11 @@ const TableItemForm: React.FC<TableItemFormProps> = ({
             name={`tables.${index}.wireHoles`}
             render={({ field }) => (
               <FormItem className="space-y-3">
-                <FormLabel>Wire Holes *</FormLabel>
+                <FormLabel>Wire Holes</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    value={field.value}
+                    value={field.value || ''}
                     className="flex flex-col space-y-2"
                   >
                     <div className="flex items-center space-x-2">

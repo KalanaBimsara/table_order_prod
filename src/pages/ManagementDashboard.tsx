@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Settings, Package, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Order } from '@/types/order';
@@ -13,6 +14,9 @@ const ManagementDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [awaitingApprovalOrders, setAwaitingApprovalOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
 
   useEffect(() => {
     fetchPendingOrders();
@@ -147,6 +151,66 @@ const ManagementDashboard: React.FC = () => {
     }
   };
 
+  const checkIfOrderPrinted = (orderId: string): boolean => {
+    const printedOrders = JSON.parse(localStorage.getItem('printedOrders') || '[]');
+    return printedOrders.includes(orderId);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'kalana123@') {
+      setIsAuthenticated(true);
+      setPasswordError(false);
+      localStorage.setItem('managementAuth', 'true');
+    } else {
+      setPasswordError(true);
+      setPassword('');
+    }
+  };
+
+  useEffect(() => {
+    // Check if already authenticated
+    const authStatus = localStorage.getItem('managementAuth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container py-6 flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Management Dashboard Access</CardTitle>
+            <CardDescription>Please enter the password to access the management dashboard</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError(false);
+                  }}
+                  className={passwordError ? 'border-red-500' : ''}
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-500 mt-1">Incorrect password. Please try again.</p>
+                )}
+              </div>
+              <Button type="submit" className="w-full">
+                Access Dashboard
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container py-6">
@@ -273,9 +337,9 @@ const ManagementDashboard: React.FC = () => {
                           <div>
                             <span className="font-medium">{table.size}</span>
                             <span className="text-muted-foreground ml-2">
-                              {table.top_colour && `Top: ${table.top_colour}`}
-                              {table.frame_colour && ` • Frame: ${table.frame_colour}`}
-                              {!table.top_colour && !table.frame_colour && `Color: ${table.colour}`}
+                              {table.topColour && `Top: ${table.topColour}`}
+                              {table.frameColour && ` • Frame: ${table.frameColour}`}
+                              {!table.topColour && !table.frameColour && table.colour && `Color: ${table.colour}`}
                             </span>
                           </div>
                           <div className="text-right">
@@ -343,10 +407,17 @@ const ManagementDashboard: React.FC = () => {
                       onClick={() => navigate(`/order-form/${order.id}`)}
                       variant="outline"
                       size="sm"
-                      className="w-full sm:w-auto"
+                      className={`w-full sm:w-auto ${
+                        checkIfOrderPrinted(order.id) 
+                          ? 'bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800' 
+                          : ''
+                      }`}
                     >
                       <FileText size={16} className="mr-2" />
                       Order Form
+                      {checkIfOrderPrinted(order.id) && (
+                        <span className="ml-2 text-xs">(Printed)</span>
+                      )}
                     </Button>
                     {order.deliveryStatus === 'pending' && (
                       <Button
@@ -392,9 +463,9 @@ const ManagementDashboard: React.FC = () => {
                           <div>
                             <span className="font-medium">{table.size}</span>
                             <span className="text-muted-foreground ml-2">
-                              {table.top_colour && `Top: ${table.top_colour}`}
-                              {table.frame_colour && ` • Frame: ${table.frame_colour}`}
-                              {!table.top_colour && !table.frame_colour && `Color: ${table.colour}`}
+                              {table.topColour && `Top: ${table.topColour}`}
+                              {table.frameColour && ` • Frame: ${table.frameColour}`}
+                              {!table.topColour && !table.frameColour && table.colour && `Color: ${table.colour}`}
                             </span>
                           </div>
                           <div className="text-right">
