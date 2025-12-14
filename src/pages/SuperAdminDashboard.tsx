@@ -44,6 +44,7 @@ type OrderDetail = {
   table_size: string;
   quantity: number;
   sales_person_name?: string;
+  order_form_number?: string;
 };
 
 type OrderStats = {
