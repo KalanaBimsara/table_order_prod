@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import TableItemForm from './TableItemForm';
 import { TableItem } from '@/types/order';
 import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPanelCost } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { addDays, format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// Function to calculate delivery date based on pending orders queue
+async function calculateDeliveryDate(): Promise<string> {
+  try {
+    // Fetch all pending orders with their order_tables
+    const { data: pendingOrders, error } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('status', 'pending');
+
+    if (error) throw error;
+
+    if (!pendingOrders || pendingOrders.length === 0) {
+      // No pending orders, delivery date is today + 1 day minimum
+      return format(addDays(new Date(), 1), 'yyyy-MM-dd');
+    }
+
+    const orderIds = pendingOrders.map(o => o.id);
+
+    // Fetch all order_tables for pending orders to get total units
+    const { data: orderTables, error: tablesError } = await supabase
+      .from('order_tables')
+      .select('quantity')
+      .in('order_id', orderIds);
+
+    if (tablesError) throw tablesError;
+
+    // Calculate total units from all pending orders
+    const totalUnits = orderTables?.reduce((sum, table) => sum + (table.quantity || 0), 0) || 0;
+
+    // Divide by 30 and round up
+    const daysToAdd = Math.ceil(totalUnits / 30);
+
+    // Add days to current date
+    const deliveryDate = addDays(new Date(), Math.max(daysToAdd, 1)); // Minimum 1 day
+
+    return format(deliveryDate, 'yyyy-MM-dd');
+  } catch (error) {
+    console.error('Error calculating delivery date:', error);
+    // Default to 7 days from now if calculation fails
+    return format(addDays(new Date(), 7), 'yyyy-MM-dd');
+  }
+}
 
 // Define schema for a single table item
 const tableItemSchema = z.object({
@@ -78,12 +122,24 @@ export function NewOrderForm() {
   const { addOrder } = useApp();
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
+  const [isCalculatingDate, setIsCalculatingDate] = useState(true);
   
   const form = useFormProvider();
 
   const watchTables = form.watch("tables");
   const watchDeliveryFee = form.watch("deliveryFee") || 0;
   const watchAdditionalCharges = form.watch("additionalCharges") || 0;
+
+  // Auto-calculate delivery date on component mount
+  useEffect(() => {
+    const fetchDeliveryDate = async () => {
+      setIsCalculatingDate(true);
+      const date = await calculateDeliveryDate();
+      form.setValue('deliveryDate', date);
+      setIsCalculatingDate(false);
+    };
+    fetchDeliveryDate();
+  }, []);
   
   // Calculate base tables cost
   const tablesCost = React.useMemo(() => {
@@ -348,10 +404,20 @@ const createEmptyTable = (): TableItem => ({
               name="deliveryDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery Date *</FormLabel>
+                  <FormLabel>Delivery Date * (Auto-calculated based on queue)</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <div className="relative">
+                      <Input type="date" {...field} disabled={isCalculatingDate} />
+                      {isCalculatingDate && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Calculated based on {Math.ceil(30)} units/day production capacity
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

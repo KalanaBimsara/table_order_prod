@@ -282,6 +282,15 @@ const OrderCard: React.FC<OrderCardProps> = ({
               <span className="min-w-0 whitespace-normal break-all sm:break-words text-red-600 dark:text-red-400 font-bold text-lg">{order.note}</span>
             </div>}
           
+          {order.deliveryDate && (
+            <div className="flex items-center gap-2 mt-3">
+              <Truck size={isMobile ? 18 : 24} className="flex-shrink-0 text-orange-500" />
+              <span className="font-medium text-orange-600 dark:text-orange-400">
+                Delivery Date: {format(new Date(order.deliveryDate), 'MMM d, yyyy')}
+              </span>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2 mt-3">
             <Calendar size={isMobile ? 18 : 24} className="flex-shrink-0 text-muted-foreground" />
             <span className="font-medium">

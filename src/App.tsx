@@ -25,6 +25,7 @@ import UserCreationPortal from "./pages/UserCreationPortal";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import SuperAdminProtectedRoute from "@/components/SuperAdminProtectedRoute";
 import PublicOrderForm from "./pages/PublicOrderForm";
+import OrderTracking from "./pages/OrderTracking";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => {
                         <main className="flex-1">
                           <Routes>
                             <Route path="/auth" element={<Auth />} />
+                            <Route path="/track" element={<OrderTracking />} />
                             <Route 
                               path="/order" 
                               element={

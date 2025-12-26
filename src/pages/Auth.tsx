@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ShoppingBag, Mail, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Package, Search } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -251,15 +251,29 @@ const Auth: React.FC = () => {
                       </Button>
                     </div>
 
-                    <div className="text-center mt-4">
-                      <p className="text-sm text-muted-foreground mb-2">Want to place an order without an account?</p>
-                      <Link to="/order">
-                        <Button variant="outline" className="w-full">
-                          <ShoppingBag size={16} className="mr-2" />
-                          Order as Guest
-                        </Button>
-                      </Link>
+                    <div className="relative mt-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">Already ordered?</span>
+                      </div>
                     </div>
+
+                    <Link to="/track" className="block mt-4">
+                      <div className="group relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4 transition-all hover:border-primary/40 hover:shadow-md">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <Package className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-foreground">Track Your Order</h3>
+                            <p className="text-sm text-muted-foreground">Check delivery status with your order number</p>
+                          </div>
+                          <Search className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    </Link>
                   </form>
                 </Form>
               )}
@@ -365,15 +379,29 @@ const Auth: React.FC = () => {
                     )}
                   </Button>
 
-                  <div className="text-center mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">Want to place an order without an account?</p>
-                    <Link to="/order">
-                      <Button variant="outline" className="w-full">
-                        <ShoppingBag size={16} className="mr-2" />
-                        Order as Guest
-                      </Button>
-                    </Link>
+                  <div className="relative mt-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">Already ordered?</span>
+                    </div>
                   </div>
+
+                  <Link to="/track" className="block mt-4">
+                    <div className="group relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4 transition-all hover:border-primary/40 hover:shadow-md">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <Package className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">Track Your Order</h3>
+                          <p className="text-sm text-muted-foreground">Check delivery status with your order number</p>
+                        </div>
+                        <Search className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </div>
+                  </Link>
                 </form>
               </Form>
             </TabsContent>

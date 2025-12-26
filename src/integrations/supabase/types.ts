@@ -405,6 +405,38 @@ export type Database = {
         }
         Relationships: []
       }
+      transport: {
+        Row: {
+          id: string
+          loaded_at: string
+          loaded_by: string | null
+          order_id: string
+          transport_mode: string
+        }
+        Insert: {
+          id?: string
+          loaded_at?: string
+          loaded_by?: string | null
+          order_id: string
+          transport_mode: string
+        }
+        Update: {
+          id?: string
+          loaded_at?: string
+          loaded_by?: string | null
+          order_id?: string
+          transport_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
