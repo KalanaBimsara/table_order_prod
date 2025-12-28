@@ -47,7 +47,7 @@ type OrderTableResponse = {
 };
 
 export function OrderList() {
-  const { getFilteredOrders, orders, assignOrder, completeOrder, getSalesPersons } = useApp();
+  const { getFilteredOrders, orders, assignOrder, completeOrder, getSalesPersons, completedOrders: paginatedCompletedOrders, hasMoreCompleted, loadingMoreCompleted, loadMoreCompletedOrders } = useApp();
   const { userRole, user } = useAuth();
   const isMobile = useIsMobile();
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('all');
@@ -93,7 +93,15 @@ export function OrderList() {
 
   const pendingOrders = filterOrdersBySearch(getFilteredOrders('pending', selectedSalesPerson));
   const assignedOrders = filterOrdersBySearch(getFilteredOrders('assigned', selectedSalesPerson));
-  const completedOrders = filterOrdersBySearch(getFilteredOrders('completed', selectedSalesPerson));
+  
+  // Use paginated completed orders from context, apply sales person filter
+  const completedOrders = useMemo(() => {
+    let filtered = paginatedCompletedOrders;
+    if (selectedSalesPerson && selectedSalesPerson !== 'all') {
+      filtered = filtered.filter(order => order.salesPersonName === selectedSalesPerson);
+    }
+    return filterOrdersBySearch(filtered);
+  }, [paginatedCompletedOrders, selectedSalesPerson, globalSearch, searchFilter]);
   
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
@@ -895,6 +903,27 @@ export function OrderList() {
                           : `No completed orders found for ${selectedSalesPerson}.`)
                     }
                   </p>
+                )}
+
+                {/* Show More Button */}
+                {!hasActiveCompletedFilters && hasMoreCompleted && sortedCompletedDateKeys.length > 0 && (
+                  <div className="flex justify-center pt-4">
+                    <Button 
+                      onClick={loadMoreCompletedOrders}
+                      disabled={loadingMoreCompleted}
+                      variant="outline"
+                      className="min-w-[200px]"
+                    >
+                      {loadingMoreCompleted ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Loading...
+                        </>
+                      ) : (
+                        'Show More Orders'
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

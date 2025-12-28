@@ -7,6 +7,9 @@ import { calculateTableAdditionalCosts } from '@/lib/utils';
 
 interface AppContextType {
   orders: Order[];
+  completedOrders: Order[];
+  hasMoreCompleted: boolean;
+  loadingMoreCompleted: boolean;
   addOrder: (order: Omit<Order, 'id' | 'status' | 'createdAt'>) => Promise<void>;
   editOrder: (orderId: string, orderData: Omit<Order, 'id' | 'status' | 'createdAt' | 'assignedTo' | 'completedAt'>) => Promise<void>;
   assignOrder: (orderId: string, assignedTo: string) => Promise<void>;
@@ -16,6 +19,7 @@ interface AppContextType {
   getAssignedOrders: () => Order[];
   getDeliveryPersonName: (userId: string) => string | null;
   getSalesPersons: () => string[];
+  loadMoreCompletedOrders: () => Promise<void>;
 }
 
 interface DeliveryPerson {
@@ -25,14 +29,21 @@ interface DeliveryPerson {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const COMPLETED_ORDERS_PAGE_SIZE = 30;
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
+  const [hasMoreCompleted, setHasMoreCompleted] = useState(true);
+  const [loadingMoreCompleted, setLoadingMoreCompleted] = useState(false);
+  const [completedOrdersOffset, setCompletedOrdersOffset] = useState(0);
   const [deliveryPeople, setDeliveryPeople] = useState<DeliveryPerson[]>([]);
   const { user, userRole } = useAuth();
 
   useEffect(() => {
     fetchOrders();
-    fetchDeliveryPeople(); // Always fetch delivery people regardless of user role
+    fetchCompletedOrders(true); // Fetch initial completed orders
+    fetchDeliveryPeople();
   }, [user, userRole]);
 
   const fetchDeliveryPeople = async () => {
@@ -57,6 +68,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (error) {
       console.error('Error fetching delivery people:', error);
     }
+  };
+
+  const fetchCompletedOrders = async (reset: boolean = false) => {
+    if (!user) return;
+    
+    try {
+      const offset = reset ? 0 : completedOrdersOffset;
+      
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .range(offset, offset + COMPLETED_ORDERS_PAGE_SIZE - 1);
+
+      // Apply role-based filtering
+      if (userRole === 'customer') {
+        query = query.eq('created_by', user.id);
+      } else if (userRole === 'delivery') {
+        query = query.eq('delivery_person_id', user.id);
+      }
+
+      const { data: ordersData, error: ordersError } = await query;
+
+      if (ordersError) {
+        console.error('Error fetching completed orders:', ordersError);
+        return;
+      }
+
+      if (!ordersData || ordersData.length === 0) {
+        if (reset) {
+          setCompletedOrders([]);
+        }
+        setHasMoreCompleted(false);
+        return;
+      }
+
+      // Check if there are more orders to load
+      setHasMoreCompleted(ordersData.length === COMPLETED_ORDERS_PAGE_SIZE);
+
+      // Fetch related tables
+      const orderIds = ordersData.map(order => order.id).filter(id => id != null);
+      
+      let tablesData: any[] = [];
+      if (orderIds.length > 0) {
+        const { data, error: tablesError } = await supabase
+          .from('order_tables')
+          .select('*')
+          .in('order_id', orderIds);
+
+        if (!tablesError && data) {
+          tablesData = data;
+        }
+      }
+
+      const tablesByOrder = tablesData.reduce((acc, table) => {
+        if (!acc[table.order_id]) {
+          acc[table.order_id] = [];
+        }
+        acc[table.order_id].push({
+          id: table.id,
+          size: table.size,
+          colour: table.colour,
+          topColour: table.top_colour || table.colour,
+          frameColour: table.frame_colour || table.colour,
+          quantity: table.quantity,
+          price: table.price,
+          legSize: table.leg_size || undefined,
+          legShape: table.leg_shape || undefined,
+          legHeight: table.leg_height || undefined,
+          wireHoles: table.wire_holes || undefined,
+          wireHolesComment: table.wire_holes_comment || undefined,
+          frontPanelSize: table.front_panel_size || undefined,
+          frontPanelLength: table.front_panel_length || undefined,
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      const formattedOrders = ordersData.map((order: any) => ({
+        id: order.id,
+        customerName: order.customer_name,
+        address: order.address,
+        contactNumber: order.contact_number,
+        tables: tablesByOrder[order.id] || [],
+        note: order.note || undefined,
+        status: order.status as OrderStatus,
+        createdAt: new Date(order.created_at),
+        completedAt: order.completed_at ? new Date(order.completed_at) : undefined,
+        assignedTo: order.delivery_person_id,
+        createdBy: order.created_by,
+        totalPrice: order.price,
+        deliveryFee: order.delivery_fee || 0,
+        additionalCharges: order.additional_charges || 0,
+        salesPersonName: order.sales_person_name,
+        deliveryDate: order.delivery_date || undefined,
+        orderFormNumber: order.order_form_number || undefined
+      }));
+
+      if (reset) {
+        setCompletedOrders(formattedOrders);
+        setCompletedOrdersOffset(COMPLETED_ORDERS_PAGE_SIZE);
+      } else {
+        setCompletedOrders(prev => [...prev, ...formattedOrders]);
+        setCompletedOrdersOffset(prev => prev + COMPLETED_ORDERS_PAGE_SIZE);
+      }
+    } catch (error) {
+      console.error('Error fetching completed orders:', error);
+    }
+  };
+
+  const loadMoreCompletedOrders = async () => {
+    if (loadingMoreCompleted || !hasMoreCompleted) return;
+    
+    setLoadingMoreCompleted(true);
+    await fetchCompletedOrders(false);
+    setLoadingMoreCompleted(false);
   };
 
   const fetchOrders = async () => {
@@ -499,6 +626,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider 
       value={{ 
         orders,
+        completedOrders,
+        hasMoreCompleted,
+        loadingMoreCompleted,
         addOrder,
         editOrder,
         assignOrder,
@@ -507,7 +637,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getFilteredOrders,
         getAssignedOrders,
         getDeliveryPersonName,
-        getSalesPersons
+        getSalesPersons,
+        loadMoreCompletedOrders
       }}
     >
       {children}

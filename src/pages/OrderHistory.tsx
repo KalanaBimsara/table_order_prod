@@ -16,9 +16,8 @@ import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 const OrderHistory: React.FC = () => {
-  const { getFilteredOrders } = useApp();
+  const { completedOrders, hasMoreCompleted, loadingMoreCompleted, loadMoreCompletedOrders } = useApp();
   const { user } = useAuth();
-  const completedOrders = getFilteredOrders('completed');
   
   const [searchFromDate, setSearchFromDate] = useState<Date | undefined>();
   const [searchToDate, setSearchToDate] = useState<Date | undefined>();
@@ -278,6 +277,27 @@ const OrderHistory: React.FC = () => {
                   : 'No completed orders yet.'
                 }
               </p>
+            )}
+            
+            {/* Show More Button */}
+            {!hasActiveFilters && hasMoreCompleted && sortedDateKeys.length > 0 && (
+              <div className="flex justify-center pt-4">
+                <Button 
+                  onClick={loadMoreCompletedOrders}
+                  disabled={loadingMoreCompleted}
+                  variant="outline"
+                  className="min-w-[200px]"
+                >
+                  {loadingMoreCompleted ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Loading...
+                    </>
+                  ) : (
+                    'Show More Orders'
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>

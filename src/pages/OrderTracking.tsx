@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Package, Clock, Copy, Check, Calendar, MapPin, Phone, User } from 'lucide-react';
+import { Search, Package, Clock, Copy, Check, Calendar, MapPin, Phone, User, ListOrdered } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
 
 interface OrderDetails {
   id: string;
@@ -35,6 +36,9 @@ const OrderTracking: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState<{ days: number; hours: number; minutes: number } | null>(null);
+  const [estimatedDeliveryDate, setEstimatedDeliveryDate] = useState<Date | null>(null);
+  const [estimatedCountdown, setEstimatedCountdown] = useState<{ days: number; hours: number; minutes: number } | null>(null);
+  const [queuePosition, setQueuePosition] = useState<{ position: number; total: number; unitsAhead: number; totalUnits: number } | null>(null);
 
   const searchOrder = async (orderNum?: string) => {
     const searchValue = orderNum || orderNumber;
@@ -56,6 +60,8 @@ const OrderTracking: React.FC = () => {
       if (!orderData) {
         toast.error('Order not found');
         setOrder(null);
+        setEstimatedDeliveryDate(null);
+        setQueuePosition(null);
         return;
       }
 
@@ -69,12 +75,100 @@ const OrderTracking: React.FC = () => {
         tables: tablesData || []
       });
 
+      // Calculate estimated delivery date and queue position for pending orders
+      if (orderData.status === 'pending') {
+        await calculateEstimatedDelivery(orderData.created_at, orderData.id);
+      } else {
+        setEstimatedDeliveryDate(null);
+        setQueuePosition(null);
+      }
+
       setSearchParams({ order: searchValue.trim() });
     } catch (error) {
       console.error('Error fetching order:', error);
       toast.error('Failed to fetch order details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateEstimatedDelivery = async (orderCreatedAt: string, orderId: string) => {
+    try {
+      // Fetch all pending orders
+      const { data: allPendingOrders, error: allError } = await supabase
+        .from('orders')
+        .select('id, quantity, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+
+      if (allError) throw allError;
+
+      // Fetch pending orders created before or at the same time as this order
+      const { data: pendingOrdersAhead, error } = await supabase
+        .from('orders')
+        .select('id, quantity, created_at')
+        .eq('status', 'pending')
+        .lte('created_at', orderCreatedAt);
+
+      if (error) throw error;
+
+      // Calculate total units from all pending orders and units ahead
+      let unitsAhead = 0;
+      let totalUnitsInQueue = 0;
+      let position = 0;
+
+      if (allPendingOrders) {
+        for (let i = 0; i < allPendingOrders.length; i++) {
+          const pendingOrder = allPendingOrders[i];
+          const { data: orderTables } = await supabase
+            .from('order_tables')
+            .select('quantity')
+            .eq('order_id', pendingOrder.id);
+
+          const orderUnits = orderTables ? orderTables.reduce((sum, table) => sum + table.quantity, 0) : 0;
+          totalUnitsInQueue += orderUnits;
+
+          if (pendingOrder.id === orderId) {
+            position = i + 1;
+          }
+        }
+      }
+
+      if (pendingOrdersAhead) {
+        for (const pendingOrder of pendingOrdersAhead) {
+          const { data: orderTables } = await supabase
+            .from('order_tables')
+            .select('quantity')
+            .eq('order_id', pendingOrder.id);
+
+          if (orderTables) {
+            unitsAhead += orderTables.reduce((sum, table) => sum + table.quantity, 0);
+          }
+        }
+      }
+
+      // Set queue position
+      setQueuePosition({
+        position,
+        total: allPendingOrders?.length || 0,
+        unitsAhead,
+        totalUnits: totalUnitsInQueue
+      });
+
+      // Calculate days: divide by 30 and round up
+      const daysToAdd = Math.ceil(unitsAhead / 30);
+      
+      // Add days to today's date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const estimatedDate = new Date(today);
+      estimatedDate.setDate(estimatedDate.getDate() + daysToAdd);
+      
+      setEstimatedDeliveryDate(estimatedDate);
+    } catch (error) {
+      console.error('Error calculating estimated delivery:', error);
+      setEstimatedDeliveryDate(null);
+      setQueuePosition(null);
     }
   };
 
@@ -112,6 +206,33 @@ const OrderTracking: React.FC = () => {
     const interval = setInterval(updateCountdown, 60000);
     return () => clearInterval(interval);
   }, [order?.delivery_date]);
+
+  // Countdown for estimated delivery date (for pending orders)
+  useEffect(() => {
+    if (!estimatedDeliveryDate) {
+      setEstimatedCountdown(null);
+      return;
+    }
+
+    const updateEstimatedCountdown = () => {
+      const now = new Date();
+      
+      if (estimatedDeliveryDate <= now) {
+        setEstimatedCountdown({ days: 0, hours: 0, minutes: 0 });
+        return;
+      }
+
+      const days = differenceInDays(estimatedDeliveryDate, now);
+      const hours = differenceInHours(estimatedDeliveryDate, now) % 24;
+      const minutes = differenceInMinutes(estimatedDeliveryDate, now) % 60;
+
+      setEstimatedCountdown({ days, hours, minutes });
+    };
+
+    updateEstimatedCountdown();
+    const interval = setInterval(updateEstimatedCountdown, 60000);
+    return () => clearInterval(interval);
+  }, [estimatedDeliveryDate]);
 
   const copyLink = () => {
     const url = `${window.location.origin}/track?order=${order?.order_form_number}`;
@@ -183,37 +304,108 @@ const OrderTracking: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              {/* Countdown Timer */}
+              {/* Exact Delivery Date (if set) */}
               {order.delivery_date && countdown && (
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6 text-center">
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground mb-3">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-medium">Estimated Delivery</span>
+                <div className="bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg p-6 text-center border border-green-500/20">
+                  <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-400 mb-3">
+                    <Calendar className="w-5 h-5" />
+                    <span className="font-medium">Confirmed Delivery Date</span>
                   </div>
                   {countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0 ? (
                     <p className="text-xl font-semibold text-green-600">Ready for Delivery!</p>
                   ) : (
                     <div className="flex justify-center gap-4">
                       <div className="text-center">
-                        <div className="text-4xl font-bold text-primary">{countdown.days}</div>
+                        <div className="text-4xl font-bold text-green-600">{countdown.days}</div>
                         <div className="text-sm text-muted-foreground">Days</div>
                       </div>
                       <div className="text-4xl font-light text-muted-foreground">:</div>
                       <div className="text-center">
-                        <div className="text-4xl font-bold text-primary">{countdown.hours}</div>
+                        <div className="text-4xl font-bold text-green-600">{countdown.hours}</div>
                         <div className="text-sm text-muted-foreground">Hours</div>
                       </div>
                       <div className="text-4xl font-light text-muted-foreground">:</div>
                       <div className="text-center">
-                        <div className="text-4xl font-bold text-primary">{countdown.minutes}</div>
+                        <div className="text-4xl font-bold text-green-600">{countdown.minutes}</div>
+                        <div className="text-sm text-muted-foreground">Minutes</div>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-sm text-green-700 dark:text-green-400 mt-3 font-medium">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    {format(new Date(order.delivery_date), 'PPPP')}
+                  </p>
+                </div>
+              )}
+
+              {/* Estimated Delivery Date (calculated from queue) */}
+              {estimatedDeliveryDate && estimatedCountdown && order.status === 'pending' && (
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6 text-center border border-primary/20">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground mb-3">
+                    <Clock className="w-5 h-5" />
+                    <span className="font-medium">Estimated Delivery (Based on Queue)</span>
+                  </div>
+                  {estimatedCountdown.days === 0 && estimatedCountdown.hours === 0 && estimatedCountdown.minutes === 0 ? (
+                    <p className="text-xl font-semibold text-primary">Processing Soon!</p>
+                  ) : (
+                    <div className="flex justify-center gap-4">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold text-primary">{estimatedCountdown.days}</div>
+                        <div className="text-sm text-muted-foreground">Days</div>
+                      </div>
+                      <div className="text-4xl font-light text-muted-foreground">:</div>
+                      <div className="text-center">
+                        <div className="text-4xl font-bold text-primary">{estimatedCountdown.hours}</div>
+                        <div className="text-sm text-muted-foreground">Hours</div>
+                      </div>
+                      <div className="text-4xl font-light text-muted-foreground">:</div>
+                      <div className="text-center">
+                        <div className="text-4xl font-bold text-primary">{estimatedCountdown.minutes}</div>
                         <div className="text-sm text-muted-foreground">Minutes</div>
                       </div>
                     </div>
                   )}
                   <p className="text-sm text-muted-foreground mt-3">
                     <Calendar className="w-4 h-4 inline mr-1" />
-                    {format(new Date(order.delivery_date), 'PPPP')}
+                    {format(estimatedDeliveryDate, 'PPPP')}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    *Estimated based on current production queue
+                  </p>
+                </div>
+              )}
+
+              {/* Queue Position Indicator */}
+              {queuePosition && order.status === 'pending' && (
+                <div className="bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-lg p-5 border border-amber-500/20">
+                  <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400 mb-4">
+                    <ListOrdered className="w-5 h-5" />
+                    <span className="font-medium">Production Queue Position</span>
+                  </div>
+                  
+                  <div className="text-center mb-4">
+                    <div className="text-5xl font-bold text-amber-600 dark:text-amber-400">
+                      #{queuePosition.position}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      of {queuePosition.total} orders in queue
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Queue Progress</span>
+                      <span>{Math.round(((queuePosition.position) / queuePosition.total) * 100)}%</span>
+                    </div>
+                    <Progress 
+                      value={((queuePosition.total - queuePosition.position + 1) / queuePosition.total) * 100} 
+                      className="h-3 bg-amber-100 dark:bg-amber-900/30"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                      <span>{queuePosition.unitsAhead} units ahead</span>
+                      <span>{queuePosition.totalUnits} total units</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
