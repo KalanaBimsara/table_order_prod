@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Package, Clock, Copy, Check, Calendar, MapPin, Phone, User, ListOrdered } from 'lucide-react';
+import { Search, Package, Clock, Copy, Check, Calendar, User, ListOrdered } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
@@ -414,14 +414,6 @@ const OrderTracking: React.FC = () => {
                 <div className="flex items-center gap-3 text-sm">
                   <User className="w-4 h-4 text-muted-foreground" />
                   <span>{order.customer_name}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{order.contact_number}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{order.address}</span>
                 </div>
               </div>
 

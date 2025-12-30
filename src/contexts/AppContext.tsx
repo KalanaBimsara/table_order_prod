@@ -10,7 +10,7 @@ interface AppContextType {
   completedOrders: Order[];
   hasMoreCompleted: boolean;
   loadingMoreCompleted: boolean;
-  addOrder: (order: Omit<Order, 'id' | 'status' | 'createdAt'>) => Promise<void>;
+  addOrder: (order: Omit<Order, 'id' | 'status' | 'createdAt'>) => Promise<string | null>;
   editOrder: (orderId: string, orderData: Omit<Order, 'id' | 'status' | 'createdAt' | 'assignedTo' | 'completedAt'>) => Promise<void>;
   assignOrder: (orderId: string, assignedTo: string) => Promise<void>;
   completeOrder: (orderId: string) => Promise<void>;
@@ -296,7 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addOrder = async (orderData: Omit<Order, 'id' | 'status' | 'createdAt'>) => {
+  const addOrder = async (orderData: Omit<Order, 'id' | 'status' | 'createdAt'>): Promise<string | null> => {
     try {
       const calculatedBasePrice = orderData.tables.reduce((sum, table) => 
         sum + (table.price * table.quantity), 0);
@@ -333,14 +333,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           delivery_date: (orderData as any).deliveryDate || null,
           delivery_type: (orderData as any).deliveryType || null
         })
-        .select('id')
+        .select('id, order_form_number')
         .single();
 
 
       if (orderError) {
         console.error('Error creating order:', orderError);
         toast.error('Failed to create order: ' + orderError.message);
-        return;
+        return null;
       }
       
       if (orderData.tables && orderData.tables.length > 0) {
@@ -369,15 +369,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (tablesError) {
           console.error('Error creating order tables:', tablesError);
           toast.error('Failed to create order tables: ' + tablesError.message);
-          return;
+          return null;
         }
       }
 
       fetchOrders();
       toast.success('Order created successfully!');
+      return order.order_form_number;
       } catch (error: any) {
     console.error('Error adding order:', error?.message || error);
     toast.error(`Unexpected error: ${error?.message || 'Check console for details'}`);
+    return null;
       }
 
   };

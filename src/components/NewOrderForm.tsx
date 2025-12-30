@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
 import TableItemForm from './TableItemForm';
 import { TableItem } from '@/types/order';
 import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPanelCost } from '@/lib/utils';
@@ -121,6 +121,9 @@ type OrderFormValues = z.infer<typeof formSchema>;
 export function NewOrderForm() {
   const { addOrder } = useApp();
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showTrackingDialog, setShowTrackingDialog] = useState(false);
+  const [trackingOrderNumber, setTrackingOrderNumber] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
   const [isCalculatingDate, setIsCalculatingDate] = useState(true);
   
@@ -230,7 +233,7 @@ export function NewOrderForm() {
   // Submit order function
   async function submitOrder(orderData: any) {
     try {
-      await addOrder(orderData);
+      const orderFormNumber = await addOrder(orderData);
       form.reset({
         customerName: "",
         customerDistrict: "",
@@ -243,12 +246,28 @@ export function NewOrderForm() {
         deliveryFee: 0,
         additionalCharges: 0,
       });
-      toast.success("Order created successfully!");
+      
+      // Show tracking link dialog
+      if (orderFormNumber) {
+        setTrackingOrderNumber(orderFormNumber);
+        setShowTrackingDialog(true);
+      }
     } catch (error) {
       console.error('Error submitting order:', error);
       toast.error('Failed to create order');
     }
   }
+
+  const getTrackingUrl = () => {
+    return `${window.location.origin}/track?order=${trackingOrderNumber}`;
+  };
+
+  const copyTrackingLink = () => {
+    navigator.clipboard.writeText(getTrackingUrl());
+    setCopied(true);
+    toast.success('Tracking link copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Handle duplicate order confirmation
   function handleDuplicateConfirm() {
@@ -404,10 +423,15 @@ const createEmptyTable = (): TableItem => ({
               name="deliveryDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Delivery Date * (Auto-calculated based on queue)</FormLabel>
+                  <FormLabel>Delivery Date (Auto-calculated)</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type="date" {...field} disabled={isCalculatingDate} />
+                      <Input 
+                        type="date" 
+                        {...field} 
+                        disabled={true}
+                        className="bg-muted cursor-not-allowed"
+                      />
                       {isCalculatingDate && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -416,7 +440,7 @@ const createEmptyTable = (): TableItem => ({
                     </div>
                   </FormControl>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Calculated based on {Math.ceil(30)} units/day production capacity
+                    Automatically calculated based on production queue (30 units/day capacity)
                   </p>
                   <FormMessage />
                 </FormItem>
@@ -582,6 +606,56 @@ const createEmptyTable = (): TableItem => ({
               Yes, Submit new order
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Tracking Link Dialog */}
+      <AlertDialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Check className="h-5 w-5 text-green-500" />
+              Order Created Successfully!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Your order #{trackingOrderNumber} has been created. Share the tracking link with your customer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <input
+                readOnly
+                value={getTrackingUrl()}
+                className="flex-1 bg-transparent text-sm outline-none"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={copyTrackingLink}
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => window.open(getTrackingUrl(), '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Tracking
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => setShowTrackingDialog(false)}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </Card>
