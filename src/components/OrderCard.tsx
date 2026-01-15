@@ -186,9 +186,9 @@ const OrderCard: React.FC<OrderCardProps> = ({
         
           <div className="flex flex-col sm:items-end gap-1">
             {/* Order number top-right */}
-            {order.order_form_number && (
+            {(order.order_form_number || order.orderFormNumber) && (
               <span className="text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full shadow-sm">
-                #{order.order_form_number}
+                #{order.order_form_number || order.orderFormNumber}
               </span>
             )}
             {getStatusBadge()}
