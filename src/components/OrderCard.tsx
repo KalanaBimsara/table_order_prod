@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Package, Palette, Hash, Calendar, CheckCircle2, Truck, StickyNote, Table, Trash2, DollarSign, User, UserPlus, LockKeyhole, Edit, FileText } from 'lucide-react';
+import { MapPin, Phone, Package, Palette, Hash, Calendar, CheckCircle2, Truck, StickyNote, Table, Trash2, DollarSign, User, UserPlus, LockKeyhole, Edit, FileText, MessageCircle } from 'lucide-react';
 import EditOrderForm from './EditOrderForm';
-import CreateQuotationDialog from './CreateQuotationDialog';
 import { Order, TableItem, tableSizeOptions, colourOptions } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -335,9 +334,23 @@ const OrderCard: React.FC<OrderCardProps> = ({
       </CardContent>
       
       <CardFooter className={`flex flex-wrap gap-2 ${isMobile ? 'justify-center' : 'justify-end'}`}>
-        {/* Quotation button - show for pending and assigned orders */}
-        {(order.status === 'pending' || order.status === 'assigned') && (
-          <CreateQuotationDialog order={order} isMobile={isMobile} />
+        {/* WhatsApp button - show for pending and assigned orders when whatsapp number exists */}
+        {(order.status === 'pending' || order.status === 'assigned') && order.whatsappNumber && (
+          <Button 
+            size={isMobile ? "sm" : "default"} 
+            variant="outline" 
+            onClick={() => {
+              const cleanNumber = order.whatsappNumber?.replace(/[^0-9]/g, '');
+              const formattedNumber = cleanNumber?.startsWith('0') 
+                ? '94' + cleanNumber.slice(1) 
+                : cleanNumber;
+              window.open(`https://wa.me/${formattedNumber}`, '_blank');
+            }}
+            className={`${isMobile ? 'text-sm w-full sm:w-auto' : 'text-base'} bg-green-500 hover:bg-green-600 text-white border-green-500`}
+          >
+            <MessageCircle size={isMobile ? 14 : 18} className="mr-1" />
+            Contact via WhatsApp
+          </Button>
         )}
         
         {/* Invoice button - only show for completed orders */}

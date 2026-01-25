@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table } from "lucide-react";
+import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table, FileText } from "lucide-react";
 import { useTheme } from "@/components/ui/theme-provider";
 import NotificationButton from "@/components/NotificationButton";
 import { useApp } from "@/contexts/AppContext";
@@ -47,6 +47,14 @@ const AppHeaderWrapper = () => {
     href: '/history',
     label: 'Order History',
     icon: History
+  }, {
+    href: '/invoicing',
+    label: 'Invoicing',
+    icon: FileText
+  }, {
+    href: '/bill-history',
+    label: 'Bill History',
+    icon: FileText
   }];
   if (userRole === 'admin') {
     menuItems.push({

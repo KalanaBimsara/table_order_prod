@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      bills: {
+        Row: {
+          bill_date: string
+          bill_number: string
+          bill_to: string
+          created_at: string
+          created_by: string | null
+          driver_name: string | null
+          id: string
+          order_numbers: string[]
+          total_amount: number
+          total_quantity: number
+          vehicle_number: string | null
+        }
+        Insert: {
+          bill_date?: string
+          bill_number: string
+          bill_to: string
+          created_at?: string
+          created_by?: string | null
+          driver_name?: string | null
+          id?: string
+          order_numbers: string[]
+          total_amount?: number
+          total_quantity?: number
+          vehicle_number?: string | null
+        }
+        Update: {
+          bill_date?: string
+          bill_number?: string
+          bill_to?: string
+          created_at?: string
+          created_by?: string | null
+          driver_name?: string | null
+          id?: string
+          order_numbers?: string[]
+          total_amount?: number
+          total_quantity?: number
+          vehicle_number?: string | null
+        }
+        Relationships: []
+      }
       daily_analytics: {
         Row: {
           completed_orders: number | null
@@ -164,6 +206,7 @@ export type Database = {
           status: string | null
           table_size: string
           updated_at: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           additional_charges?: number | null
@@ -189,6 +232,7 @@ export type Database = {
           status?: string | null
           table_size: string
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           additional_charges?: number | null
@@ -214,6 +258,7 @@ export type Database = {
           status?: string | null
           table_size?: string
           updated_at?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }

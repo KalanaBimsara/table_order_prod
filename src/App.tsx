@@ -13,7 +13,9 @@ import Index from "./pages/Index";
 import Orders from "./pages/Orders";
 import OrderHistory from "./pages/OrderHistory";
 import Invoice from "./pages/Invoice";
+import Invoicing from "./pages/Invoicing";
 import Production from "./pages/Production";
+import BillHistory from "./pages/BillHistory";
 import ProductionQueue from "./pages/ProductionQueue";
 import ManagementDashboard from "./pages/ManagementDashboard";
 import OrderForm from "./pages/OrderForm";
@@ -99,6 +101,22 @@ const App = () => {
                                 element={
                                   <ProtectedRoute allowedRoles={['admin', 'customer', 'delivery']}>
                                     <Invoice />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/invoicing" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'customer', 'delivery']}>
+                                    <Invoicing />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/bill-history" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'customer', 'delivery']}>
+                                    <BillHistory />
                                   </ProtectedRoute>
                                 } 
                               />

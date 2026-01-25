@@ -108,6 +108,7 @@ const formSchema = z.object({
   customerDistrict: z.string().min(1, { message: "Please select a district" }),
   address: z.string().min(5, { message: "Please enter a valid address" }),
   contactNumber: z.string().min(10, { message: "Please enter a valid phone number" }),
+  whatsappNumber: z.string().min(10, { message: "Please enter a valid WhatsApp number" }),
   deliveryDate: z.string().min(1, { message: "Please select a delivery date" }),
   deliveryType: z.enum(['courier', 'non-courier'], { required_error: "Please select delivery type" }),
   tables: z.array(tableItemSchema).min(1, { message: "At least one table is required" }),
@@ -188,6 +189,7 @@ export function NewOrderForm() {
         customerDistrict: values.customerDistrict,
         address: values.address,
         contactNumber: values.contactNumber,
+        whatsappNumber: values.whatsappNumber,
         deliveryDate: values.deliveryDate,
         deliveryType: values.deliveryType,
         tables: values.tables.map((table): TableItem => ({
@@ -239,6 +241,7 @@ export function NewOrderForm() {
         customerDistrict: "",
         address: "",
         contactNumber: "",
+        whatsappNumber: "",
         deliveryDate: "",
         deliveryType: undefined,
         tables: [createEmptyTable()],
@@ -285,6 +288,7 @@ export function NewOrderForm() {
       customerDistrict: "",
       address: "",
       contactNumber: "",
+      whatsappNumber: "",
       deliveryDate: "",
       deliveryType: undefined,
       tables: [createEmptyTable()],
@@ -410,6 +414,20 @@ const createEmptyTable = (): TableItem => ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contact Number *</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="(07x) xxx-xxxx" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="whatsappNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>WhatsApp Number *</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder="(07x) xxx-xxxx" {...field} />
                   </FormControl>
@@ -671,6 +689,7 @@ function useFormProvider() {
       customerDistrict: "",
       address: "",
       contactNumber: "",
+      whatsappNumber: "",
       deliveryDate: "",
       deliveryType: undefined,
       tables: [

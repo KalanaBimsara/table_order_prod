@@ -221,3 +221,23 @@
   justify-content: center;
   width: 100%;
 }
+
+/* Print styles for invoicing */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .page-break-after-always {
+    page-break-after: always;
+  }
+  
+  .page-break-after-always:last-child {
+    page-break-after: auto;
+  }
+  
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

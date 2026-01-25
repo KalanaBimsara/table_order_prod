@@ -30,6 +30,7 @@ export type Order = {
   customerDistrict?: string,  // Added for district selection
   address: string,
   contactNumber: string,
+  whatsappNumber?: string,  // Added for WhatsApp contact
   tables: TableItem[],
   note?: string,
   status: OrderStatus,
@@ -125,9 +126,9 @@ export const factoryPriceMap: Record<string, number> = {
   '48x60': 22500,
   
   // Extra large sizes
-  '30x72': 29250,
-  '36x72': 29250,
-  '48x72': 29250,
+  '30x72': 30500,
+  '36x72': 30500,
+  '48x72': 30500,
   
   // Jumbo sizes
   '30x84': 37000,

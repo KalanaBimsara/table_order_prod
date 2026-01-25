@@ -10,6 +10,7 @@ import {
   Factory,
   Settings,
   MapPin,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -27,6 +28,8 @@ const AppHeader = () => {
     { href: '/', label: 'Dashboard', icon: Home },
     { href: '/orders', label: 'Orders', icon: Package },
     { href: '/history', label: 'Order History', icon: History },
+    { href: '/invoicing', label: 'Invoicing', icon: FileText },
+    { href: '/bill-history', label: 'Bill History', icon: FileText },
     { href: '/track', label: 'Track Order', icon: MapPin },
   ];
   
