@@ -415,10 +415,13 @@ const OrderForm: React.FC = () => {
         @media print {
           .no-print { display: none !important; }
           header { display: none !important; }
-          body { margin: 0; padding: 0; }
+          body { margin: 0; padding: 0; background: transparent !important; }
           .container { max-width: 100% !important; padding: 0 !important; }
           @page { size: A4; margin: 0; }
           .form-copy { margin: 0; padding: 0; }
+          .form-copy > div { background-color: transparent !important; }
+          .form-copy table { background-color: transparent !important; }
+          .form-copy th, .form-copy td { background-color: transparent !important; }
         }
       `}</style>
       {/* Control Bar */}
