@@ -415,13 +415,27 @@ const OrderForm: React.FC = () => {
         @media print {
           .no-print { display: none !important; }
           header { display: none !important; }
-          body { margin: 0; padding: 0; background: transparent !important; }
-          .container { max-width: 100% !important; padding: 0 !important; }
-          @page { size: A4; margin: 0; }
-          .form-copy { margin: 0; padding: 0; }
-          .form-copy > div { background-color: transparent !important; }
-          .form-copy table { background-color: transparent !important; }
-          .form-copy th, .form-copy td { background-color: transparent !important; }
+          html, body { 
+            margin: 0; 
+            padding: 0; 
+            background: white !important; 
+            background-color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .container { max-width: 100% !important; padding: 0 !important; background: white !important; }
+          @page { size: A4; margin: 0; background: white; }
+          .form-copy { margin: 0; padding: 0; background: white !important; background-color: white !important; }
+          .form-copy > div { background: white !important; background-color: white !important; }
+          .form-copy .p-3 { background: white !important; background-color: white !important; }
+          .form-copy table { background: white !important; background-color: white !important; }
+          .form-copy th, .form-copy td { background: white !important; background-color: white !important; }
+          .form-copy tr { background: white !important; background-color: white !important; }
+          .form-copy thead, .form-copy tbody { background: white !important; background-color: white !important; }
+          * { 
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
       {/* Control Bar */}
