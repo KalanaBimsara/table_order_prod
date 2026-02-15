@@ -25,7 +25,7 @@ export function useNotification() {
         if (currentPermission === 'granted' && 'serviceWorker' in navigator) {
           try {
             const registration = await navigator.serviceWorker.ready;
-            const existingSubscription = await registration.pushManager.getSubscription();
+            const existingSubscription = await (registration as any).pushManager.getSubscription();
             if (existingSubscription) {
               setSubscription(existingSubscription);
               console.log('Existing push subscription found');

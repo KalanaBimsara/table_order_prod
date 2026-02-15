@@ -102,7 +102,7 @@ class NotificationService {
     
     try {
       console.log('Attempting to subscribe to push...');
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(publicVapidKey)
       });

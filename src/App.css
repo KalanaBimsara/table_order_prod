@@ -40,3 +40,85 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Bill print & PDF: one landscape A4 per bill – left half = Customer Copy (1), right half = Account Copy (2) */
+.bill-print-root {
+  --bill-half-width: 50%;
+}
+
+.bill-sheet.landscape-a4 {
+  display: flex;
+  width: 100%;
+  min-height: 210mm;
+  box-sizing: border-box;
+}
+
+.bill-half {
+  width: var(--bill-half-width, 50%);
+  min-width: 0;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.bill-half-inner {
+  width: 200%;
+  max-width: none;
+  box-sizing: border-box;
+  transform: scale(0.5);
+  transform-origin: top left;
+}
+
+.bill-half-right .bill-half-inner {
+  transform-origin: top left;
+}
+
+@media (min-width: 768px) {
+  .bill-half-inner {
+    transform: scale(0.55);
+    width: 182%;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  .bill-print-root {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .bill-sheet.landscape-a4 {
+    width: 297mm;
+    min-height: 210mm;
+    height: 210mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bill-sheet.landscape-a4:last-child {
+    page-break-after: auto;
+  }
+
+  .bill-half {
+    width: 148.5mm;
+    max-width: 148.5mm;
+    padding: 6mm;
+  }
+
+  .bill-half-inner {
+    transform: scale(0.5);
+    transform-origin: top left;
+    width: 200%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
