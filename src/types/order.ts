@@ -51,27 +51,27 @@ export type Order = {
 
 export const tableSizeOptions = [
   // Standard Tables
-  { value: '24x32', label: '24x32 Table', price: 11000 },
-  { value: '24x36', label: '24x36 Table', price: 12000 },
+  { value: '24x32', label: '24x32 Table', price: 11500 },
+  { value: '24x36', label: '24x36 Table', price: 12500 },
   { value: '24x48', label: '24x48 Table', price: 13500 }, 
-  { value: '24x60', label: '24x60 Table', price: 15000 }, 
-  { value: '24x72', label: '24x72 Table', price: 20000 },
-  { value: '24x84', label: '24x84 Table', price: 22500 },
-  { value: '24x96', label: '24x96 Table', price: 22500 },
+  { value: '24x60', label: '24x60 Table', price: 15500 }, 
+  { value: '24x72', label: '24x72 Table', price: 20500 },
+  { value: '24x84', label: '24x84 Table', price: 23000 },
+  { value: '24x96', label: '24x96 Table', price: 23000 },
 
   // Dining Tables
-  { value: 'DS (36x36)', label: '36x36 Dinning', price: 14500 },
-  { value: 'DL (60x36)', label: '60x36 Dinning', price: 16500 },
+  { value: 'DS (36x36)', label: '36x36 Dinning', price: 15000 },
+  { value: 'DL (60x36)', label: '60x36 Dinning', price: 17000 },
 
   // L-Shaped Tables - increased by 1000
-  { value: 'L-A', label: 'L-Shaped Table (Size A)', price: 23000 },
-  { value: 'L-B', label: 'L-Shaped Table (Size B)', price: 24000 },
-  { value: 'L-C', label: 'L-Shaped Table (Size C)', price: 24000 },
-  { value: 'L-D', label: 'L-Shaped Table (Size D)', price: 26000 },
-  { value: 'L-E', label: 'L-Shaped Table (Size E)', price: 25000 },
-  { value: 'L-F', label: 'L-Shaped Table (Size F)', price: 26000 },
-  { value: 'L-G', label: 'L-Shaped Table (Size G)', price: 26000 },
-  { value: 'L-H', label: 'L-Shaped Table (Size H)', price: 28000 }
+  { value: 'L-A', label: 'L-Shaped Table (Size A)', price: 24000 },
+  { value: 'L-B', label: 'L-Shaped Table (Size B)', price: 25000 },
+  { value: 'L-C', label: 'L-Shaped Table (Size C)', price: 25000 },
+  { value: 'L-D', label: 'L-Shaped Table (Size D)', price: 27000 },
+  { value: 'L-E', label: 'L-Shaped Table (Size E)', price: 26000 },
+  { value: 'L-F', label: 'L-Shaped Table (Size F)', price: 27000 },
+  { value: 'L-G', label: 'L-Shaped Table (Size G)', price: 27000 },
+  { value: 'L-H', label: 'L-Shaped Table (Size H)', price: 29000 }
 ];
 
 export const colourOptions = [
@@ -84,13 +84,13 @@ export const colourOptions = [
 // Factory price mapping based on the provided chart
 export const factoryPriceMap: Record<string, number> = {
   // Standard sizes
-  '24x32': 8250,
-  '24x36': 8750,
-  '24x48': 9250,
-  '24x60': 11250,
-  '24x72': 15250,
-  '24x84': 18500,
-  '24x96': 18500,
+  '24x32': 8500,
+  '24x36': 9000,
+  '24x48': 9500,
+  '24x60': 11500,
+  '24x72': 15500,
+  '24x84': 18750,
+  '24x96': 18750,
   
   // Medium sizes
   '30x48': 18500,
@@ -118,31 +118,31 @@ export const factoryPriceMap: Record<string, number> = {
   // Dining tables - both formats supported
   '36x36': 9500,
   '60x36': 11500,
-  'DS (36x36)': 9500,
-  'DL (60x36)': 11500,
+  'DS (36x36)': 9750,
+  'DL (60x36)': 11750,
   
   // L-Shaped tables - both uppercase and lowercase
-  'L-A': 18500,
-  'L-B': 19000,
-  'L-C': 19500,
-  'L-D': 21500,
-  'L-E': 20500,
-  'L-F': 21000,
-  'L-G': 21500,
-  'L-H': 23500
+  'L-A': 19000,
+  'L-B': 19500,
+  'L-C': 20000,
+  'L-D': 22000,
+  'L-E': 21000,
+  'L-F': 21500,
+  'L-G': 22000,
+  'L-H': 24000
 };
 
 // Standard sizes sorted by area (width * depth) for custom size matching
 const standardSizes = [
-  { size: '24x32', width: 24, depth: 32, price: 8250 },
-  { size: '24x36', width: 24, depth: 36, price: 8750 },
-  { size: '24x48', width: 24, depth: 48, price: 9250 },
-  { size: '36x36', width: 36, depth: 36, price: 9500 },  // Dining
-  { size: '24x60', width: 24, depth: 60, price: 11250 },
-  { size: '60x36', width: 60, depth: 36, price: 11500 }, // Dining
-  { size: '24x72', width: 24, depth: 72, price: 15250 },
-  { size: '24x84', width: 24, depth: 84, price: 18500 },
-  { size: '24x96', width: 24, depth: 96, price: 18500 },
+  { size: '24x32', width: 24, depth: 32, price: 8500 },
+  { size: '24x36', width: 24, depth: 36, price: 9000 },
+  { size: '24x48', width: 24, depth: 48, price: 9500 },
+  { size: '36x36', width: 36, depth: 36, price: 9750 },  // Dining
+  { size: '24x60', width: 24, depth: 60, price: 11500 },
+  { size: '60x36', width: 60, depth: 36, price: 11750 }, // Dining
+  { size: '24x72', width: 24, depth: 72, price: 15500 },
+  { size: '24x84', width: 24, depth: 84, price: 18250 },
+  { size: '24x96', width: 24, depth: 96, price: 19000 },
   { size: '30x48', width: 30, depth: 48, price: 18500 },
   { size: '36x48', width: 36, depth: 48, price: 18500 },
   { size: '48x48', width: 48, depth: 48, price: 18500 },
