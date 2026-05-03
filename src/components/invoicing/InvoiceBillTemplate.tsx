@@ -49,8 +49,6 @@ interface BillRow {
   isExtraFee?: boolean;
 }
 
-export type BillCopyVariant = 'customer' | 'account';
-
 interface InvoiceBillTemplateProps {
   billNumber: string;
   orderNumbers: string[];
@@ -63,10 +61,6 @@ interface InvoiceBillTemplateProps {
   totalAmount: number;
   totalQuantity: number;
   invoiceDate: string;
-  /** Label shown on copy: "Customer Copy" or "Account Copy" */
-  copyLabel?: string;
-  /** Color theme: customer (blue) or account (green) */
-  variant?: BillCopyVariant;
 }
 
 const formatPrice = (price: number) => {
@@ -84,28 +78,15 @@ const InvoiceBillTemplate: React.FC<InvoiceBillTemplateProps> = ({
   vehicleNumber,
   totalAmount,
   totalQuantity,
-  invoiceDate,
-  copyLabel,
-  variant = 'account'
+  invoiceDate
 }) => {
   const MAX_ROWS = 10;
   const emptyRowsCount = Math.max(0, MAX_ROWS - rows.length);
 
-  const isCustomer = variant === 'customer';
-  const accentBorder = isCustomer ? 'border-[#1e40af]' : 'border-[#2d5a27]';
-  const accentText = isCustomer ? 'text-[#1e40af]' : 'text-[#2d5a27]';
-  const headerBg = isCustomer ? 'bg-blue-50/80' : 'bg-transparent';
-
   return (
-    <div className={`bill-template bg-white print:shadow-none mb-8 ${copyLabel ? '' : 'page-break-after-always'}`}>
-      {/* Copy label badge when in two-copy mode */}
-      {copyLabel && (
-        <div className={`print-copy-label text-sm font-bold mb-2 ${accentText}`}>
-          {copyLabel}
-        </div>
-      )}
-      {/* Header - color by variant */}
-      <div className={`bg-transparent border-b-2 ${accentBorder} ${accentText} ${headerBg} p-4 flex justify-between items-start`}>
+    <div className="bg-white print:shadow-none mb-8 page-break-after-always">
+      {/* Header - Transparent background with dark green text for ink saving */}
+      <div className="bg-transparent border-b-2 border-[#2d5a27] text-[#2d5a27] p-4 flex justify-between items-start">
         <div className="flex items-center gap-3">
           <div className="text-2xl font-bold tracking-wide">BOSS FURNITURE Pvt Ltd.</div>
         </div>
@@ -148,7 +129,7 @@ const InvoiceBillTemplate: React.FC<InvoiceBillTemplateProps> = ({
             </div>
             <div className="flex gap-2 justify-end mb-2">
               <span className="text-gray-600">Bill No :</span>
-              <span className={`font-bold text-lg ${accentText}`}>{billNumber}</span>
+              <span className="font-bold text-lg text-[#2d5a27]">{billNumber}</span>
             </div>
             <div className="flex gap-2 justify-end text-xs text-gray-600">
               <span>Order(s) :</span>
@@ -165,7 +146,7 @@ const InvoiceBillTemplate: React.FC<InvoiceBillTemplateProps> = ({
         {/* Items Table */}
         <table className="w-full border-collapse border border-gray-300 mt-4">
           <thead>
-            <tr className={isCustomer ? 'bg-blue-100' : 'bg-gray-100'}>
+            <tr className="bg-gray-100">
               <th className="border border-gray-300 p-2 text-left w-16">Qty</th>
               <th className="border border-gray-300 p-2 text-left">Item</th>
               <th className="border border-gray-300 p-2 text-center w-20">Order No</th>

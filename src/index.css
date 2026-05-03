@@ -222,24 +222,9 @@
   width: 100%;
 }
 
-/* Print styles for invoicing - Half A4 Landscape */
+/* Print styles for invoicing */
 @media print {
-  @page {
-    size: A5 landscape;
-    margin: 5mm;
-  }
-  
   .no-print {
-    display: none !important;
-  }
-  
-  /* Hide toast notifications during print */
-  [data-sonner-toaster],
-  .sonner-toast,
-  [role="status"][aria-live="polite"],
-  .Toastify,
-  .toast,
-  .notification {
     display: none !important;
   }
   
@@ -254,54 +239,5 @@
   body {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* Bill template sizing for half A4 landscape (A5 landscape = 210mm x 148mm) */
-  .bill-template {
-    width: 100% !important;
-    max-width: 200mm !important;
-    font-size: 9pt !important;
-    padding: 2mm !important;
-    margin: 0 auto !important;
-  }
-  
-  .bill-template table {
-    font-size: 8pt !important;
-  }
-  
-  .bill-template th,
-  .bill-template td {
-    padding: 2px 4px !important;
-  }
-  
-  .bill-template .text-2xl {
-    font-size: 14pt !important;
-  }
-  
-  .bill-template .text-lg {
-    font-size: 10pt !important;
-  }
-  
-  .bill-template .text-sm,
-  .bill-template .text-xs {
-    font-size: 7pt !important;
-  }
-  
-  /* Ink-saving: transparent backgrounds */
-  .bill-template,
-  .bill-template * {
-    background-color: transparent !important;
-    background: transparent !important;
-  }
-  
-  /* Dialog content should not constrain print */
-  [role="dialog"] {
-    max-width: none !important;
-    max-height: none !important;
-    overflow: visible !important;
-    position: static !important;
-    transform: none !important;
   }
 }
