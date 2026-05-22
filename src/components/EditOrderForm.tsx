@@ -178,7 +178,7 @@ const createEmptyTable = (): TableItem => ({
   frameColour: 'black',
   colour: 'teak', // For compatibility, align with topColour
   quantity: 1,
-  price: 11000,  // Updated default price for 24x32 table
+  price: 11500,  // Default price for 24x32 table
   legSize: '1.5x1.5',
   legShape: 'O Shape',
   legHeight: '30',

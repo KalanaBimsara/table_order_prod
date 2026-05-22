@@ -379,9 +379,27 @@ const OrderCard: React.FC<OrderCardProps> = ({
           </Button>
         )}
         
-        {userRole === 'admin' && order.status === 'pending' && <Button size={isMobile ? "sm" : "default"} variant="outline" onClick={handleAssignOrder} className={`${isMobile ? 'text-sm w-full sm:w-auto' : 'text-base'}`}>
-            Assign to Delivery
-          </Button>}
+        {userRole === 'admin' && order.status === 'pending' && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size={isMobile ? "sm" : "default"} variant="outline" className={`${isMobile ? 'text-sm w-full sm:w-auto' : 'text-base'}`}>
+                Assign to Delivery
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Status Change</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to change this order's status to "Pending to Assign" for customer "{order.customerName}"?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleAssignOrder}>Confirm</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         
         {(userRole === 'admin' && order.status === 'assigned' || userRole === 'delivery' && order.status === 'assigned') && 
           <AlertDialog>

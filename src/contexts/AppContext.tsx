@@ -334,7 +334,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           additional_charges: orderData.additionalCharges || 0,
           sales_person_name: profileData?.name || null,
           delivery_date: (orderData as any).deliveryDate || null,
-          delivery_type: (orderData as any).deliveryType || null
+          delivery_type: (orderData as any).deliveryType || null,
+          odoo_sync_status: null
         })
         .select('id, order_form_number')
         .single();
@@ -373,7 +374,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error('Error creating order tables:', tablesError);
           toast.error('Failed to create order tables: ' + tablesError.message);
           return null;
-        }
+      }
+
+      // Step 3: Mark order as pending for Odoo sync
+      const { error: syncError } = await supabase
+        .from('orders')
+        .update({ odoo_sync_status: 'pending' })
+        .eq('id', order.id);
+
+      if (syncError) {
+        console.error('Error updating odoo_sync_status:', syncError);
+      }
       }
 
       fetchOrders();

@@ -14,10 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      bill_items: {
+        Row: {
+          amount: number
+          bill_id: string
+          created_at: string
+          delivery_city: string
+          id: string
+          is_extra_fee: boolean
+          item: string
+          order_number: string
+          quantity: number
+          rate: number
+        }
+        Insert: {
+          amount?: number
+          bill_id: string
+          created_at?: string
+          delivery_city?: string
+          id?: string
+          is_extra_fee?: boolean
+          item: string
+          order_number: string
+          quantity: number
+          rate?: number
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          created_at?: string
+          delivery_city?: string
+          id?: string
+          is_extra_fee?: boolean
+          item?: string
+          order_number?: string
+          quantity?: number
+          rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bills: {
         Row: {
           bill_date: string
-          bill_number: string
+          bill_number: number
           bill_to: string
           created_at: string
           created_by: string | null
@@ -30,7 +77,7 @@ export type Database = {
         }
         Insert: {
           bill_date?: string
-          bill_number: string
+          bill_number: number
           bill_to: string
           created_at?: string
           created_by?: string | null
@@ -43,7 +90,7 @@ export type Database = {
         }
         Update: {
           bill_date?: string
-          bill_number?: string
+          bill_number?: number
           bill_to?: string
           created_at?: string
           created_by?: string | null
@@ -199,11 +246,14 @@ export type Database = {
           delivery_type: string | null
           id: string
           note: string | null
+          odoo_sale_order_id: string | null
+          odoo_sync_status: string | null
           order_form_number: string | null
           price: number
           quantity: number
           sales_person_name: string | null
           status: string | null
+          synced_to_odoo: boolean | null
           table_size: string
           updated_at: string | null
           whatsapp_number: string | null
@@ -225,11 +275,14 @@ export type Database = {
           delivery_type?: string | null
           id?: string
           note?: string | null
+          odoo_sale_order_id?: string | null
+          odoo_sync_status?: string | null
           order_form_number?: string | null
           price: number
           quantity: number
           sales_person_name?: string | null
           status?: string | null
+          synced_to_odoo?: boolean | null
           table_size: string
           updated_at?: string | null
           whatsapp_number?: string | null
@@ -251,14 +304,38 @@ export type Database = {
           delivery_type?: string | null
           id?: string
           note?: string | null
+          odoo_sale_order_id?: string | null
+          odoo_sync_status?: string | null
           order_form_number?: string | null
           price?: number
           quantity?: number
           sales_person_name?: string | null
           status?: string | null
+          synced_to_odoo?: boolean | null
           table_size?: string
           updated_at?: string | null
           whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      product_mapping: {
+        Row: {
+          id: string
+          odoo_internal_reference: string | null
+          odoo_product_id: number | null
+          supabase_size: string | null
+        }
+        Insert: {
+          id?: string
+          odoo_internal_reference?: string | null
+          odoo_product_id?: number | null
+          supabase_size?: string | null
+        }
+        Update: {
+          id?: string
+          odoo_internal_reference?: string | null
+          odoo_product_id?: number | null
+          supabase_size?: string | null
         }
         Relationships: []
       }
@@ -487,7 +564,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      algorithm_sign: {
+        Args: { algorithm: string; secret: string; signables: string }
+        Returns: string
+      }
       get_current_user_role: { Args: never; Returns: string }
+      sign: {
+        Args: { algorithm?: string; payload: Json; secret: string }
+        Returns: string
+      }
       super_admin_get_session: {
         Args: { p_session_token: string }
         Returns: {
@@ -514,7 +599,18 @@ export type Database = {
         Args: { p_session_token: string }
         Returns: undefined
       }
+      try_cast_double: { Args: { inp: string }; Returns: number }
       update_daily_analytics: { Args: never; Returns: undefined }
+      url_decode: { Args: { data: string }; Returns: string }
+      url_encode: { Args: { data: string }; Returns: string }
+      verify: {
+        Args: { algorithm?: string; secret: string; token: string }
+        Returns: {
+          header: Json
+          payload: Json
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
       user_role: "customer" | "seller" | "delivery" | "admin" | "manager"

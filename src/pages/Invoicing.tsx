@@ -254,7 +254,7 @@ const Invoicing: React.FC = () => {
       const vehicleLabel = TRANSPORT_MODES.find(m => m.value === selectedVehicle)?.label || '';
 
       const { error } = await supabase.from('bills').insert({
-        bill_number: billNumber.trim(),
+        bill_number: parseInt(billNumber.trim(), 10),
         bill_to: billToLabel,
         driver_name: driverName,
         vehicle_number: vehicleLabel,

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Bill {
   id: string;
-  bill_number: string;
+  bill_number: number;
   bill_to: string;
   driver_name: string | null;
   vehicle_number: string | null;
@@ -86,7 +86,7 @@ const BillHistory = () => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      bill.bill_number.toLowerCase().includes(term) ||
+      String(bill.bill_number).toLowerCase().includes(term) ||
       bill.bill_to.toLowerCase().includes(term) ||
       bill.order_numbers.some((orderNum) => orderNum.toLowerCase().includes(term)) ||
       bill.driver_name?.toLowerCase().includes(term) ||
@@ -284,7 +284,7 @@ const BillHistory = () => {
               
               <div className="bill-preview-content">
                 <InvoiceBillTemplate
-                  billNumber={selectedBill.bill_number}
+                  billNumber={String(selectedBill.bill_number)}
                   orderNumbers={selectedBill.order_numbers}
                   billTo={selectedBill.bill_to}
                   driverName={selectedBill.driver_name || ''}
