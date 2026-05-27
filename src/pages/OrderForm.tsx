@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Printer, Edit, X, Save } from 'lucide-react';
+import { Printer, Edit, X, Save, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Order } from '@/types/order';
 
@@ -14,6 +14,8 @@ const OrderForm: React.FC = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const PRINTER_EMAIL = 'kalanabimsara8@gmail.com';
   const [salesPersonContact, setSalesPersonContact] = useState<string>('');
   const [editableDetails, setEditableDetails] = useState({
     pageName: '',
@@ -114,6 +116,70 @@ const OrderForm: React.FC = () => {
     }
     window.print();
   };
+
+  const handleSendToPrinter = async () => {
+    if (!order) return;
+    setSendingEmail(true);
+    try {
+      const formsContainer = document.getElementById('order-forms-container');
+      if (!formsContainer) throw new Error('Form content not found');
+
+      // Dynamically import html2pdf
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      // Clone container so we don't disturb the live view
+      const clone = formsContainer.cloneNode(true) as HTMLElement;
+      const wrapper = document.createElement('div');
+      wrapper.style.background = '#fff';
+      wrapper.appendChild(clone);
+
+      const filename = `order-${order.orderFormNumber || order.id}.pdf`;
+
+      const pdfBlob: Blob = await html2pdf()
+        .set({
+          margin: 0,
+          filename,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'], avoid: '.form-copy' },
+        })
+        .from(wrapper)
+        .outputPdf('blob');
+
+      // Convert blob to base64
+      const arrayBuf = await pdfBlob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuf);
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      const pdfBase64 = btoa(binary);
+
+      const { data, error } = await supabase.functions.invoke('send-order-to-printer', {
+        body: {
+          to: PRINTER_EMAIL,
+          subject: `Order Form #${order.orderFormNumber || order.id} - ${order.customerName}`,
+          html: `<p>Order form #${order.orderFormNumber || order.id} for ${order.customerName} is attached as PDF.</p>`,
+          pdfBase64,
+          pdfFilename: filename,
+        },
+      });
+
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+
+      toast.success('Order form PDF sent to printer email');
+    } catch (err: any) {
+      console.error('Send to printer failed:', err);
+      toast.error(err.message || 'Failed to send to printer');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+
 
   const getTotalQuantity = () => {
     return order?.tables.reduce((sum, table) => sum + table.quantity, 0) || 0;
@@ -462,6 +528,10 @@ const OrderForm: React.FC = () => {
                 </>
               )}
             </Button>
+            <Button onClick={handleSendToPrinter} disabled={sendingEmail} variant="secondary">
+              <Mail size={16} className="mr-2" />
+              {sendingEmail ? 'Sending...' : 'Send to Printer'}
+            </Button>
             <Button onClick={handlePrint} className="bg-primary">
               <Printer size={16} className="mr-2" />
               Print Form (4 Copies)
@@ -471,7 +541,7 @@ const OrderForm: React.FC = () => {
       </div>
 
       {/* Forms Container - one set of 4 copies per table */}
-      <div className="container py-8 space-y-8">
+      <div id="order-forms-container" className="container py-8 space-y-8">
         {order.tables.map((table, tableIndex) => (
           <React.Fragment key={tableIndex}>
             <FormCopy copyNumber={2} colorName="magenta" copyLabel="ACCOUNT COPY" singleTable={table} tableIndex={tableIndex} />

@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table, FileText } from "lucide-react";
+import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table, FileText, RefreshCw } from "lucide-react";
 import { useTheme } from "@/components/ui/theme-provider";
 import NotificationButton from "@/components/NotificationButton";
 import { useApp } from "@/contexts/AppContext";
@@ -16,12 +16,14 @@ const AppHeaderWrapper = () => {
     signOut
   } = useAuth();
   const {
-    userRole
+    userRole,
+    refreshAll
   } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const {
     theme,
@@ -32,6 +34,16 @@ const AppHeaderWrapper = () => {
   }, []);
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await refreshAll();
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
   };
 
   // Menu items based on user role
@@ -133,6 +145,11 @@ const AppHeaderWrapper = () => {
 
           {/* ✅ Show "Super Admin" button for admin users */}
           {userRole === "admin"}
+
+          <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing} title="Refresh data">
+            <RefreshCw className={`h-[1.2rem] w-[1.2rem] ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh</span>
+          </Button>
 
           {mounted && <Button variant="ghost" size="icon" onClick={toggleTheme}>
               <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
