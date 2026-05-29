@@ -42,9 +42,10 @@ const AppHeaderWrapper = () => {
     try {
       await refreshAll();
     } finally {
-      setTimeout(() => setRefreshing(false), 500);
+      window.location.reload();
     }
   };
+
 
   // Menu items based on user role
   const menuItems = [{

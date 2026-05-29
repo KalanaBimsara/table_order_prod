@@ -253,7 +253,6 @@ export type Database = {
           quantity: number
           sales_person_name: string | null
           status: string | null
-          synced_to_odoo: boolean | null
           table_size: string
           updated_at: string | null
           whatsapp_number: string | null
@@ -282,7 +281,6 @@ export type Database = {
           quantity: number
           sales_person_name?: string | null
           status?: string | null
-          synced_to_odoo?: boolean | null
           table_size: string
           updated_at?: string | null
           whatsapp_number?: string | null
@@ -311,7 +309,6 @@ export type Database = {
           quantity?: number
           sales_person_name?: string | null
           status?: string | null
-          synced_to_odoo?: boolean | null
           table_size?: string
           updated_at?: string | null
           whatsapp_number?: string | null
@@ -319,6 +316,27 @@ export type Database = {
         Relationships: []
       }
       product_mapping: {
+        Row: {
+          id: string
+          odoo_internal_reference: string | null
+          odoo_product_id: number | null
+          supabase_size: string | null
+        }
+        Insert: {
+          id?: string
+          odoo_internal_reference?: string | null
+          odoo_product_id?: number | null
+          supabase_size?: string | null
+        }
+        Update: {
+          id?: string
+          odoo_internal_reference?: string | null
+          odoo_product_id?: number | null
+          supabase_size?: string | null
+        }
+        Relationships: []
+      }
+      product_mapping_Prod: {
         Row: {
           id: string
           odoo_internal_reference: string | null

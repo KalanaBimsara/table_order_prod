@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Printer, Edit, X, Save, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Order } from '@/types/order';
+import QRCode from 'qrcode';
+
 
 const OrderForm: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -17,6 +19,8 @@ const OrderForm: React.FC = () => {
   const [sendingEmail, setSendingEmail] = useState(false);
   const PRINTER_EMAIL = 'kalanabimsara8@gmail.com';
   const [salesPersonContact, setSalesPersonContact] = useState<string>('');
+  const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
+
   const [editableDetails, setEditableDetails] = useState({
     pageName: '',
     pageTel: '',
@@ -27,11 +31,59 @@ const OrderForm: React.FC = () => {
     wAppNo: '',
   });
 
+
   useEffect(() => {
     if (orderId) {
       fetchOrder();
     }
   }, [orderId]);
+
+  // Generate QR codes containing order details for each form copy (scan & count)
+  useEffect(() => {
+    if (!order) return;
+    const copyLabels = ['PRODUCTION COPY', 'OFFICE COPY', 'TRANSPORT COPY', 'CUSTOMER COPY'];
+    const generate = async () => {
+      const map: Record<string, string> = {};
+      for (let t = 0; t < order.tables.length; t++) {
+        const table = order.tables[t];
+        for (let c = 1; c <= 4; c++) {
+          const payload = {
+            v: 1,
+            orderNo: order.orderFormNumber || order.id,
+            orderId: order.id,
+            customer: order.customerName,
+            district: order.customerDistrict || null,
+            deliveryDate: order.deliveryDate || null,
+            deliveryType: order.deliveryType || null,
+            copy: copyLabels[c - 1],
+            tableIndex: t + 1,
+            tableCount: order.tables.length,
+            size: table.size,
+            topColour: table.topColour || table.colour,
+            frameColour: table.frameColour || null,
+            qty: table.quantity,
+            legSize: table.legSize || null,
+            legShape: table.legShape || null,
+            legHeight: table.legHeight || null,
+            ts: order.createdAt ? new Date(order.createdAt).toISOString() : null,
+          };
+          try {
+            const url = await QRCode.toDataURL(JSON.stringify(payload), {
+              margin: 0,
+              width: 260,
+              errorCorrectionLevel: 'M',
+            });
+            map[`${t}-${c}`] = url;
+          } catch (e) {
+            console.error('QR generation failed', e);
+          }
+        }
+      }
+      setQrCodes(map);
+    };
+    generate();
+  }, [order]);
+
 
   const fetchOrder = async () => {
     try {
@@ -129,23 +181,84 @@ const OrderForm: React.FC = () => {
 
       // Clone container so we don't disturb the live view
       const clone = formsContainer.cloneNode(true) as HTMLElement;
+
+      // Build an off-screen A4-sized wrapper that mimics the print stylesheet
+      // (white/transparent backgrounds, no UI chrome) so the PDF matches the
+      // "Print Form" output exactly.
       const wrapper = document.createElement('div');
-      wrapper.style.background = '#fff';
-      wrapper.appendChild(clone);
+      wrapper.style.position = 'fixed';
+      wrapper.style.left = '-10000px';
+      wrapper.style.top = '0';
+      wrapper.style.width = '210mm';
+      wrapper.style.background = '#ffffff';
+      wrapper.style.padding = '0';
+      wrapper.style.margin = '0';
+
+      // Inject the same overrides used by @media print so backgrounds are
+      // white and each .form-copy fills exactly half an A4 page (2 per page,
+      // 4 copies per table => 2 pages per table).
+      const styleEl = document.createElement('style');
+      styleEl.innerHTML = `
+        #pdf-root, #pdf-root * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        #pdf-root .no-print { display: none !important; }
+        #pdf-root, #pdf-root .container {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          max-width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        #pdf-root .form-copy {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+          height: 148.5mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        #pdf-root .form-copy > div,
+        #pdf-root .form-copy .p-3,
+        #pdf-root .form-copy table,
+        #pdf-root .form-copy thead,
+        #pdf-root .form-copy tbody,
+        #pdf-root .form-copy tr,
+        #pdf-root .form-copy th,
+        #pdf-root .form-copy td {
+          background: #ffffff !important;
+          background-color: #ffffff !important;
+        }
+      `;
+      wrapper.appendChild(styleEl);
+
+      const root = document.createElement('div');
+      root.id = 'pdf-root';
+      root.style.background = '#ffffff';
+      root.appendChild(clone);
+      wrapper.appendChild(root);
+      document.body.appendChild(wrapper);
 
       const filename = `order-${order.orderFormNumber || order.id}.pdf`;
 
-      const pdfBlob: Blob = await html2pdf()
-        .set({
-          margin: 0,
-          filename,
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'], avoid: '.form-copy' },
-        })
-        .from(wrapper)
-        .outputPdf('blob');
+      let pdfBlob: Blob;
+      try {
+        pdfBlob = await html2pdf()
+          .set({
+            margin: 0,
+            filename,
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'], avoid: '.form-copy' },
+          })
+          .from(root)
+          .outputPdf('blob');
+      } finally {
+        document.body.removeChild(wrapper);
+      }
 
       // Convert blob to base64
       const arrayBuf = await pdfBlob.arrayBuffer();
@@ -178,6 +291,7 @@ const OrderForm: React.FC = () => {
       setSendingEmail(false);
     }
   };
+
 
 
 
@@ -237,6 +351,9 @@ const OrderForm: React.FC = () => {
           backgroundColor: colors.bg,
           color: colors.text
         }}>
+          {/* QR Code moved into notes section (rendered inline at bottom of form) */}
+
+
           {/* Custom Order Seal */}
           {hasCustomizations && (
             <div style={{
@@ -433,43 +550,63 @@ const OrderForm: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="mt-2 pt-2 border-t text-xs space-y-1" style={{ borderColor: colors.border }}>
-            {order.note && (
-              <div
-                style={{
-                  color: 'red',
-                  fontWeight: 'bold',
-                  fontSize: '13px',
-                  marginTop: '6px'
-                }}>
-                Notes / Drawing: {order.note}
-              </div>
-            )}
-            {singleTable.wireHolesComment && (
-              <div
-                style={{
-                  color: 'red',
-                  fontWeight: 'bold',
-                  fontSize: '13px',
-                  marginTop: '6px'
-                }}
-              >
-                Wire Hole Comment: {singleTable.wireHolesComment}
-              </div>
-            )}
-            {(singleTable.frontPanelSize || singleTable.frontPanelLength) && (
-              <div
-                style={{
-                  color: 'red',
-                  fontWeight: 'bold',
-                  fontSize: '13px',
-                  marginTop: '6px'
-                }}
-              >
-                Front Panel: {singleTable.frontPanelSize || ''}{singleTable.frontPanelLength ? ` (Length: ${singleTable.frontPanelLength})` : ''}
-              </div>
-            )}
+          {/* Notes section split into two columns: notes on the left, QR code on the right */}
+          <div className="mt-2 pt-2 border-t text-xs flex" style={{ borderColor: colors.border }}>
+            {/* Left column: Notes / comments */}
+            <div className="flex-1 space-y-1 pr-2" style={{ borderRight: `1px solid ${colors.border}` }}>
+              {order.note && (
+                <div
+                  style={{
+                    color: 'red',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    marginTop: '6px'
+                  }}>
+                  Notes / Drawing: {order.note}
+                </div>
+              )}
+              {singleTable.wireHolesComment && (
+                <div
+                  style={{
+                    color: 'red',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    marginTop: '6px'
+                  }}
+                >
+                  Wire Hole Comment: {singleTable.wireHolesComment}
+                </div>
+              )}
+              {(singleTable.frontPanelSize || singleTable.frontPanelLength) && (
+                <div
+                  style={{
+                    color: 'red',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    marginTop: '6px'
+                  }}
+                >
+                  Front Panel: {singleTable.frontPanelSize || ''}{singleTable.frontPanelLength ? ` (Length: ${singleTable.frontPanelLength})` : ''}
+                </div>
+              )}
+            </div>
+            {/* Right column: QR code for scan & count tracking. Size will be tuned later. */}
+            <div className="pl-2 flex flex-col items-center justify-center" style={{ minWidth: '140px' }}>
+              {qrCodes[`${tableIndex}-${copyNumber}`] && (
+                <>
+                  <img
+                    src={qrCodes[`${tableIndex}-${copyNumber}`]}
+                    alt="Order QR"
+                    style={{ width: '130px', height: '130px', display: 'block' }}
+                  />
+                  <div style={{ fontSize: '8px', color: colors.text, marginTop: '2px', fontWeight: 600 }}>
+                    Scan to count
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+
         </div>
       </div>
     );
@@ -506,15 +643,16 @@ const OrderForm: React.FC = () => {
       `}</style>
       {/* Control Bar */}
       <div className="no-print bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="container py-4 flex justify-between items-center">
-          <Button variant="outline" onClick={() => navigate(-1)}>
+        <div className="container py-4 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
+          <Button variant="outline" onClick={() => navigate(-1)} className="w-full sm:w-auto">
             <X size={16} className="mr-2" />
             Close
           </Button>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant={editMode ? "default" : "outline"}
               onClick={() => setEditMode(!editMode)}
+              className="w-full sm:w-auto"
             >
               {editMode ? (
                 <>
@@ -528,16 +666,17 @@ const OrderForm: React.FC = () => {
                 </>
               )}
             </Button>
-            <Button onClick={handleSendToPrinter} disabled={sendingEmail} variant="secondary">
+            <Button onClick={handleSendToPrinter} disabled={sendingEmail} variant="secondary" className="w-full sm:w-auto">
               <Mail size={16} className="mr-2" />
               {sendingEmail ? 'Sending...' : 'Send to Printer'}
             </Button>
-            <Button onClick={handlePrint} className="bg-primary">
+            <Button onClick={handlePrint} className="bg-primary w-full sm:w-auto">
               <Printer size={16} className="mr-2" />
               Print Form (4 Copies)
             </Button>
           </div>
         </div>
+
       </div>
 
       {/* Forms Container - one set of 4 copies per table */}
