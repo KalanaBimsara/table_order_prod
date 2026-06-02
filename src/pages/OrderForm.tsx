@@ -9,6 +9,14 @@ import { toast } from 'sonner';
 import { Order } from '@/types/order';
 import QRCode from 'qrcode';
 
+const FORM_COPIES = [
+  { copyNumber: 2, colorName: 'magenta', copyLabel: 'ACCOUNT COPY' },
+  { copyNumber: 3, colorName: 'yellow', copyLabel: 'GATE PASS' },
+  { copyNumber: 1, colorName: 'cyan', copyLabel: 'TRANSPORT COPY' },
+  { copyNumber: 4, colorName: 'black', copyLabel: 'PRODUCTION COPY' },
+] as const;
+
+const getQrCodeKey = (tableIndex: number, copyLabel: string) => `${tableIndex}-${copyLabel}`;
 
 const OrderForm: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -41,12 +49,11 @@ const OrderForm: React.FC = () => {
   // Generate QR codes containing order details for each form copy (scan & count)
   useEffect(() => {
     if (!order) return;
-    const copyLabels = ['PRODUCTION COPY', 'OFFICE COPY', 'TRANSPORT COPY', 'CUSTOMER COPY'];
     const generate = async () => {
       const map: Record<string, string> = {};
       for (let t = 0; t < order.tables.length; t++) {
         const table = order.tables[t];
-        for (let c = 1; c <= 4; c++) {
+        for (const copy of FORM_COPIES) {
           const payload = {
             v: 1,
             orderNo: order.orderFormNumber || order.id,
@@ -55,7 +62,7 @@ const OrderForm: React.FC = () => {
             district: order.customerDistrict || null,
             deliveryDate: order.deliveryDate || null,
             deliveryType: order.deliveryType || null,
-            copy: copyLabels[c - 1],
+            copy: copy.copyLabel,
             tableIndex: t + 1,
             tableCount: order.tables.length,
             size: table.size,
@@ -73,7 +80,7 @@ const OrderForm: React.FC = () => {
               width: 260,
               errorCorrectionLevel: 'M',
             });
-            map[`${t}-${c}`] = url;
+            map[getQrCodeKey(t, copy.copyLabel)] = url;
           } catch (e) {
             console.error('QR generation failed', e);
           }
@@ -151,7 +158,6 @@ const OrderForm: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching order:', error);
-      toast.error('Failed to fetch order details');
     } finally {
       setLoading(false);
     }
@@ -282,11 +288,8 @@ const OrderForm: React.FC = () => {
 
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-
-      toast.success('Order form PDF sent to printer email');
     } catch (err: any) {
       console.error('Send to printer failed:', err);
-      toast.error(err.message || 'Failed to send to printer');
     } finally {
       setSendingEmail(false);
     }
@@ -337,6 +340,7 @@ const OrderForm: React.FC = () => {
     
     const colors = colorStyles[colorName];
     const formattedOrderNumber = order.orderFormNumber || '000000';
+    const qrCode = qrCodes[getQrCodeKey(tableIndex, copyLabel)];
     
     // Check if order has customizations
     const hasCustomizations = order.tables.some(table => 
@@ -345,7 +349,7 @@ const OrderForm: React.FC = () => {
     
     return (
       <div className="form-copy" style={{ height: '50vh', pageBreakAfter:!(tableIndex === order.tables.length - 1 && copyNumber === 4)? 'always': 'auto', pageBreakInside: 'avoid' }}>
-        <div className="p-3 h-full relative" style={{ 
+        <div className={`h-full relative ${copyLabel === 'TRANSPORT COPY' || copyLabel === 'PRODUCTION COPY' || copyLabel === 'GATE PASS' ? 'pt-1 px-3 pb-3' : 'p-3'}`} style={{ 
           fontFamily: 'Arial, sans-serif', 
           fontSize: '11px',
           backgroundColor: colors.bg,
@@ -378,7 +382,7 @@ const OrderForm: React.FC = () => {
           {/* Company Info - Fixed at Top Center */}
           <div style={{
             position: 'absolute',
-            top: '12px',
+            top: '4px',
             left: '50%',
             transform: 'translateX(-50%)',
             textAlign: 'center',
@@ -393,7 +397,7 @@ const OrderForm: React.FC = () => {
           {/* Copy Label - Fixed at Top Left */}
           <div style={{
             position: 'absolute',
-            top: '12px',
+            top: '4px',
             left: '12px',
             zIndex: 5
           }}>
@@ -403,7 +407,7 @@ const OrderForm: React.FC = () => {
           {/* Order No - Fixed at Top Right */}
           <div style={{
             position: 'absolute',
-            top: '12px',
+            top: '4px',
             right: '12px',
             textAlign: 'right',
             zIndex: 5
@@ -417,7 +421,7 @@ const OrderForm: React.FC = () => {
           </div>
 
           {/* Header - Condensed */}
-          <div className="flex justify-between items-start" style={{ marginTop: '50px' }}>
+          <div className="flex justify-between items-start" style={{ marginTop: copyLabel === 'TRANSPORT COPY' || copyLabel === 'PRODUCTION COPY' ? '28px' : copyLabel === 'GATE PASS' ? '40px' : '50px' }}>
             <div className="flex flex-col">
               {/* Customer Information - Aligned with Delivery Date */}
               <div style={{ marginTop: '0px', fontSize: '12px' }}>
@@ -499,68 +503,48 @@ const OrderForm: React.FC = () => {
               <div className="mt-1 text-xs">Approved via W/App</div>
             </div>
             <div className="text-center">
-              <div className="border-b mt-3" style={{ borderColor: colors.border }}>&nbsp;</div>
+              <div className="border-b mt-1" style={{ borderColor: colors.border }}>&nbsp;</div>
               <div className="font-medium">Authorized Signature</div>
             </div>
             
             <div className="text-center">
-              <div className="border-b mt-3" style={{ borderColor: colors.border }}>&nbsp;</div>
+              <div className="border-b mt-1" style={{ borderColor: colors.border }}>&nbsp;</div>
               <div className="font-medium">Authorized Signature</div>
             </div>
           </div>
 
           {/* Customer Signature for Transport Copy */}
           {copyLabel === "TRANSPORT COPY" && (
-            <div className="mt-3 pt-2 border-t" style={{ borderColor: colors.border }}>
-              <div className="text-xs mb-2" style={{ fontSize: '11px', lineHeight: '1.4' }}>
+            <div className="mt-1 pt-1 border-t" style={{ borderColor: colors.border }}>
+              <div className="text-xs" style={{ fontSize: '11px', lineHeight: '1.3', marginBottom: '2px' }}>
                 <strong>Customer Declaration:</strong> I confirm that I have received the goods in undamaged condition and have checked everything properly before the driver left the premises.
               </div>
-              <div className="flex justify-between items-end">
-                <div className="flex-1">
-                  <div className="border-b mt-2 mr-4" style={{ borderColor: colors.border }}>&nbsp;</div>
-                  <div className="font-medium text-xs mt-1">Customer Signature</div>
+              <div className="flex justify-between items-start">
+                <div className="flex-1 mr-4">
+                  <div className="font-medium text-xs">Customer Signature</div>
+                  <div className="border-b" style={{ borderColor: colors.border }}>&nbsp;</div>
                 </div>
-                <div className="flex-1">
-                  <div className="border-b mt-2 ml-4" style={{ borderColor: colors.border }}>&nbsp;</div>
-                  <div className="font-medium text-xs mt-1 text-right">Date</div>
+                <div className="flex-1 ml-4">
+                  <div className="font-medium text-xs text-right">Date</div>
+                  <div className="border-b" style={{ borderColor: colors.border }}>&nbsp;</div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Factory Assembler Signature for Production Copy */}
-          {copyLabel === "PRODUCTION COPY" && (
-            <div className="mt-3 pt-2 border-t" style={{ borderColor: colors.border }}>
-              <div className="flex justify-between items-end">
-                <div className="flex-1">
-                  <div className="text-xs mb-1 font-medium">Assembled By:</div>
-                  <div className="border-b mt-2 mr-4" style={{ borderColor: colors.border }}>&nbsp;</div>
-                  <div className="font-medium text-xs mt-1">Factory Assembler Name</div>
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs mb-1 font-medium">&nbsp;</div>
-                  <div className="border-b mt-2 mx-4" style={{ borderColor: colors.border }}>&nbsp;</div>
-                  <div className="font-medium text-xs mt-1 text-center">Signature</div>
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs mb-1 font-medium">&nbsp;</div>
-                  <div className="border-b mt-2 ml-4" style={{ borderColor: colors.border }}>&nbsp;</div>
-                  <div className="font-medium text-xs mt-1 text-right">Date</div>
-                </div>
-              </div>
-            </div>
-          )}
+
           {/* Notes section split into two columns: notes on the left, QR code on the right */}
-          <div className="mt-2 pt-2 border-t text-xs flex" style={{ borderColor: colors.border }}>
+          <div className="mt-1 pt-1 border-t text-xs flex" style={{ borderColor: colors.border }}>
             {/* Left column: Notes / comments */}
-            <div className="flex-1 space-y-1 pr-2" style={{ borderRight: `1px solid ${colors.border}` }}>
+            <div className="flex-1 space-y-2 pr-2" style={{ borderRight: `1px solid ${colors.border}` }}>
               {order.note && (
                 <div
                   style={{
                     color: 'red',
                     fontWeight: 'bold',
-                    fontSize: '13px',
-                    marginTop: '6px'
+                    fontSize: '18px',
+                    marginTop: '6px',
+                    lineHeight: '1.1'
                   }}>
                   Notes / Drawing: {order.note}
                 </div>
@@ -570,8 +554,9 @@ const OrderForm: React.FC = () => {
                   style={{
                     color: 'red',
                     fontWeight: 'bold',
-                    fontSize: '13px',
-                    marginTop: '6px'
+                    fontSize: '16px',
+                    marginTop: '6px',
+                    lineHeight: '1.1'
                   }}
                 >
                   Wire Hole Comment: {singleTable.wireHolesComment}
@@ -582,8 +567,9 @@ const OrderForm: React.FC = () => {
                   style={{
                     color: 'red',
                     fontWeight: 'bold',
-                    fontSize: '13px',
-                    marginTop: '6px'
+                    fontSize: '16px',
+                    marginTop: '6px',
+                    lineHeight: '1.1'
                   }}
                 >
                   Front Panel: {singleTable.frontPanelSize || ''}{singleTable.frontPanelLength ? ` (Length: ${singleTable.frontPanelLength})` : ''}
@@ -591,18 +577,13 @@ const OrderForm: React.FC = () => {
               )}
             </div>
             {/* Right column: QR code for scan & count tracking. Size will be tuned later. */}
-            <div className="pl-2 flex flex-col items-center justify-center" style={{ minWidth: '140px' }}>
-              {qrCodes[`${tableIndex}-${copyNumber}`] && (
-                <>
-                  <img
-                    src={qrCodes[`${tableIndex}-${copyNumber}`]}
-                    alt="Order QR"
-                    style={{ width: '130px', height: '130px', display: 'block' }}
-                  />
-                  <div style={{ fontSize: '8px', color: colors.text, marginTop: '2px', fontWeight: 600 }}>
-                    Scan to count
-                  </div>
-                </>
+            <div className="pl-2 flex flex-col items-center justify-center" style={{ minWidth: '4.5cm' }}>
+              {qrCode && (
+                <img
+                  src={qrCode}
+                  alt="Order QR"
+                  style={{ width: '4cm', height: '4cm', display: 'block' }}
+                />
               )}
             </div>
           </div>
@@ -683,10 +664,16 @@ const OrderForm: React.FC = () => {
       <div id="order-forms-container" className="container py-8 space-y-8">
         {order.tables.map((table, tableIndex) => (
           <React.Fragment key={tableIndex}>
-            <FormCopy copyNumber={2} colorName="magenta" copyLabel="ACCOUNT COPY" singleTable={table} tableIndex={tableIndex} />
-            <FormCopy copyNumber={3} colorName="yellow" copyLabel="GATE PASS" singleTable={table} tableIndex={tableIndex} />
-            <FormCopy copyNumber={1} colorName="cyan" copyLabel="TRANSPORT COPY" singleTable={table} tableIndex={tableIndex} />
-            <FormCopy copyNumber={4} colorName="black" copyLabel="PRODUCTION COPY" singleTable={table} tableIndex={tableIndex} />
+            {FORM_COPIES.map((copy) => (
+              <FormCopy
+                key={copy.copyLabel}
+                copyNumber={copy.copyNumber}
+                colorName={copy.colorName}
+                copyLabel={copy.copyLabel}
+                singleTable={table}
+                tableIndex={tableIndex}
+              />
+            ))}
           </React.Fragment>
         ))}
       </div>

@@ -65,7 +65,6 @@ const ManagementDashboard: React.FC = () => {
       setAwaitingApprovalOrders(formattedOrders);
     } catch (error) {
       console.error('Error fetching awaiting approval orders:', error);
-      toast.error('Failed to fetch awaiting approval orders');
     }
   };
 
@@ -78,11 +77,9 @@ const ManagementDashboard: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Order marked as ready for delivery');
       await fetchAwaitingApprovalOrders();
     } catch (error) {
       console.error('Error updating order:', error);
-      toast.error('Failed to update order');
     }
   };
 
@@ -128,7 +125,6 @@ const ManagementDashboard: React.FC = () => {
       setOrders(formattedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      toast.error('Failed to fetch orders');
     } finally {
       setLoading(false);
     }
@@ -143,11 +139,9 @@ const ManagementDashboard: React.FC = () => {
 
       if (error) throw error;
 
-      toast.success('Order marked as ready for delivery');
       await fetchPendingOrders();
     } catch (error) {
       console.error('Error updating order:', error);
-      toast.error('Failed to update order');
     }
   };
 

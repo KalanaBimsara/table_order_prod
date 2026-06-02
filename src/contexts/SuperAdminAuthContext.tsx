@@ -109,8 +109,7 @@ export const SuperAdminAuthProvider: React.FC<{ children: React.ReactNode }> = (
         last_login: row.last_login,
         is_active: row.is_active,
       });
-      
-      toast.success('Successfully signed in');
+      // Removed successfully signed in notification as per request
       navigate('/super-admin/dashboard');
     } catch (error: any) {
       console.error('Sign in error:', error);

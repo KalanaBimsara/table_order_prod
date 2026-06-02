@@ -607,9 +607,13 @@ export type Database = {
       super_admin_sign_in: {
         Args: { p_password: string; p_username: string }
         Returns: {
-          created_at: string
           email: string
-          id: string
+          expires_at: string
+          is_active: boolean
+          last_login: string
+          session_id: string
+          session_token: string
+          user_id: string
           username: string
         }[]
       }

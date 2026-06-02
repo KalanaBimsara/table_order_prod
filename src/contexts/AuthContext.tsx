@@ -43,9 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (event === 'SIGNED_IN') {
           // Only show toast if not coming from signup (to avoid duplicate notification)
-          if (!isSigningUp.current) {
-            toast.success('Successfully signed in');
-          }
+          // Removed successfully signed in notification as per request
           // Reset the flag after a short delay
           setTimeout(() => {
             isSigningUp.current = false;
