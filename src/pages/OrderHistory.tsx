@@ -14,11 +14,15 @@ import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-f
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+type ExportStatus = 'pending' | 'assigned' | 'completed';
 
 const OrderHistory: React.FC = () => {
-  const { completedOrders, hasMoreCompleted, loadingMoreCompleted, loadMoreCompletedOrders } = useApp();
+  const { orders, completedOrders, hasMoreCompleted, loadingMoreCompleted, loadMoreCompletedOrders } = useApp();
   const { user } = useAuth();
-  
+
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('completed');
   const [searchFromDate, setSearchFromDate] = useState<Date | undefined>();
   const [searchToDate, setSearchToDate] = useState<Date | undefined>();
   const [customerNameSearch, setCustomerNameSearch] = useState('');
@@ -105,15 +109,41 @@ const OrderHistory: React.FC = () => {
   const hasActiveFilters = searchFromDate || searchToDate || customerNameSearch.trim();
 
   const exportToExcel = () => {
-    if (searchFilteredOrders.length === 0) {
-      toast.error('No orders to export');
+    const sourceOrders = exportStatus === 'completed'
+      ? completedOrders
+      : orders.filter(o => o.status === exportStatus);
+
+    if (sourceOrders.length === 0) {
+      toast.error(`No ${exportStatus} orders to export`);
+      return;
+    }
+
+    // Apply date + name filters to chosen status
+    let dataset = sourceOrders;
+    if (customerNameSearch.trim()) {
+      dataset = dataset.filter(o => o.customerName.toLowerCase().includes(customerNameSearch.toLowerCase().trim()));
+    }
+    if (searchFromDate || searchToDate) {
+      dataset = dataset.filter(o => {
+        const ref = o.completedAt || o.createdAt;
+        if (!ref) return false;
+        const d = new Date(ref);
+        if (searchFromDate && d < startOfDay(searchFromDate)) return false;
+        if (searchToDate && d > endOfDay(searchToDate)) return false;
+        return true;
+      });
+    }
+
+    if (dataset.length === 0) {
+      toast.error('No orders match the current filters');
       return;
     }
 
     // Prepare data for Excel export
-    const exportData = searchFilteredOrders.flatMap(order => 
+    const exportData = dataset.flatMap(order =>
       order.tables.map((table, index) => ({
-        'Order ID': order.id,
+      'Order ID': order.id,
+        'Order Form Number': order.orderFormNumber || order.order_form_number || 'N/A',
         'Customer Name': order.customerName,
         'Contact Number': order.contactNumber,
         'Address': order.address,
@@ -145,10 +175,10 @@ const OrderHistory: React.FC = () => {
     ws['!cols'] = colWidths;
 
     // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Completed Orders');
+    XLSX.utils.book_append_sheet(wb, ws, `${exportStatus} Orders`);
 
     // Generate filename with date range or current date
-    let filename = 'completed_orders';
+    let filename = `${exportStatus}_orders`;
     if (searchFromDate && searchToDate) {
       filename += `_${format(searchFromDate, 'yyyy-MM-dd')}_to_${format(searchToDate, 'yyyy-MM-dd')}`;
     } else if (searchFromDate) {
@@ -176,14 +206,25 @@ const OrderHistory: React.FC = () => {
               <CheckCircle2 size={20} />
               Completed Orders
             </div>
-            <Button 
-              onClick={exportToExcel}
-              disabled={searchFilteredOrders.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Download size={16} />
-              Export to Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={exportStatus} onValueChange={(v) => setExportStatus(v as ExportStatus)}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={exportToExcel}
+                className="flex items-center gap-2"
+              >
+                <Download size={16} />
+                Export to Excel
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             All successfully delivered and completed orders
