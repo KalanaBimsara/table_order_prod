@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Trash2, Edit, KeyRound, RefreshCw, Users } from 'lucide-react';
+import { Trash2, Edit, KeyRound, RefreshCw, Users, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type UserProfile = {
@@ -17,6 +17,7 @@ type UserProfile = {
   name: string | null;
   role: 'admin' | 'customer' | 'delivery' | 'manager' | 'seller' | null;
   contact_no: string | null;
+  email: string | null;
   created_at: string;
 };
 
@@ -25,10 +26,12 @@ const SystemUserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState<{ name: string; role: string; contact_no: string }>({ name: '', role: 'customer', contact_no: '' });
   const [newPassword, setNewPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -124,6 +127,33 @@ const SystemUserManagement = () => {
     }
   };
 
+  const handleEmailClick = (user: UserProfile) => {
+    setSelectedUser(user);
+    setNewEmail(user.email || '');
+    setEmailDialogOpen(true);
+  };
+
+  const handleEmailSubmit = async () => {
+    if (!selectedUser || !newEmail) return;
+    try {
+      setIsSubmitting(true);
+      const sessionToken = localStorage.getItem('super_admin_session');
+      const { error } = await supabase.functions.invoke('super-admin-change-email', {
+        body: { userId: selectedUser.id, newEmail, sessionToken }
+      });
+      if (error) throw error;
+      toast.success('Email changed successfully');
+      setEmailDialogOpen(false);
+      setNewEmail('');
+      loadUsers();
+    } catch (error: any) {
+      console.error('Error changing email:', error);
+      toast.error(error.message || 'Failed to change email');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteClick = (user: UserProfile) => {
     setSelectedUser(user);
     setDeleteDialogOpen(true);
@@ -202,6 +232,7 @@ const SystemUserManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Created</TableHead>
@@ -212,6 +243,7 @@ const SystemUserManagement = () => {
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                  <TableCell className="text-sm">{user.email || 'N/A'}</TableCell>
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>
                       {user.role || 'customer'}
@@ -231,7 +263,16 @@ const SystemUserManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => handleEmailClick(user)}
+                        title="Change Email"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handlePasswordClick(user)}
+                        title="Change Password"
                       >
                         <KeyRound className="h-4 w-4" />
                       </Button>
@@ -341,6 +382,42 @@ const SystemUserManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Change Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Email</DialogTitle>
+            <DialogDescription>
+              Set a new email for {selectedUser?.name || 'this user'}. They will use this email to sign in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-email">New Email Address</Label>
+              <Input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="user@example.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEmailSubmit}
+              disabled={isSubmitting || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail) || newEmail === selectedUser?.email}
+            >
+              {isSubmitting ? 'Changing...' : 'Change Email'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Delete User Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -269,20 +269,7 @@ const Dashboard: React.FC = () => {
 
       {/* Delivery Dashboard View */}
       {userRole === 'delivery' && (
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck size={20} />
-                Delivery Dashboard
-              </CardTitle>
-              <CardDescription>View and manage assigned deliveries</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OrderList />
-            </CardContent>
-          </Card>
-        </div>
+        <OrderList />
       )}
     </div>
   );
