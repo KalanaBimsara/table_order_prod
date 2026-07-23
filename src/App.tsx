@@ -28,6 +28,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import SuperAdminProtectedRoute from "@/components/SuperAdminProtectedRoute";
 import PublicOrderForm from "./pages/PublicOrderForm";
 import OrderTracking from "./pages/OrderTracking";
+import Transport from "./pages/Transport";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,14 @@ const App = () => {
                                 element={
                                   <ProtectedRoute allowedRoles={['admin', 'manager']}>
                                     <OrderForm />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/transport" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                                    <Transport />
                                   </ProtectedRoute>
                                 } 
                               />

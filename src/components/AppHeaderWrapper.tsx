@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table, FileText, RefreshCw } from "lucide-react";
+import { Moon, Sun, Factory, Shield, Menu, X, Home, Package, History, Settings, Table, FileText, RefreshCw, Truck } from "lucide-react";
 import { useTheme } from "@/components/ui/theme-provider";
 import NotificationButton from "@/components/NotificationButton";
 import { useApp } from "@/contexts/AppContext";
@@ -85,6 +85,10 @@ const AppHeaderWrapper = () => {
       href: '/management',
       label: 'Management',
       icon: Settings
+    }, {
+      href: '/transport',
+      label: 'Transport',
+      icon: Truck
     });
   }
   if (userRole === 'admin') {
