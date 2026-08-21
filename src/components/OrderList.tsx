@@ -95,6 +95,9 @@ export function OrderList() {
     );
   };
 
+  // Set of standard size values (from the order form dropdown)
+  const standardSizeValues = useMemo(() => new Set(tableSizeOptions.map(o => o.value)), []);
+
   // Filter orders by table properties (top color, frame color, size)
   const filterOrdersByTableProps = (orderList: Order[]) => {
     if (selectedTopColor === 'all' && selectedFrameColor === 'all' && selectedSize === 'all') {
@@ -105,7 +108,14 @@ export function OrderList() {
       order.tables.some(table => {
         const topColorMatch = selectedTopColor === 'all' || table.topColour === selectedTopColor;
         const frameColorMatch = selectedFrameColor === 'all' || table.frameColour === selectedFrameColor;
-        const sizeMatch = selectedSize === 'all' || table.size === selectedSize;
+        let sizeMatch = selectedSize === 'all';
+        if (!sizeMatch) {
+          if (selectedSize === 'custom') {
+            sizeMatch = !standardSizeValues.has(table.size);
+          } else {
+            sizeMatch = table.size === selectedSize;
+          }
+        }
         return topColorMatch && frameColorMatch && sizeMatch;
       })
     );
@@ -152,27 +162,28 @@ export function OrderList() {
     return Array.from(colors).sort();
   }, [orders, paginatedCompletedOrders]);
 
-  const sizeOptions = useMemo(() => {
-    const sizes = new Set<string>();
-    orders.forEach(order => order.tables.forEach(table => {
-      if (table.size) sizes.add(table.size);
+  // Build the size dropdown options: standard sizes (from the order form) plus "Custom Size"
+  // for any non-standard sizes present in the orders.
+  const sizeFilterOptions = useMemo(() => {
+    const standardSizes = tableSizeOptions.map(option => ({
+      value: option.value,
+      label: option.label,
     }));
-    paginatedCompletedOrders.forEach(order => order.tables.forEach(table => {
-      if (table.size) sizes.add(table.size);
-    }));
-    return Array.from(sizes).sort();
-  }, [orders, paginatedCompletedOrders]);
+    const hasCustomSize = orders.some(order =>
+      order.tables.some(table => table.size && !standardSizeValues.has(table.size))
+    ) || paginatedCompletedOrders.some(order =>
+      order.tables.some(table => table.size && !standardSizeValues.has(table.size))
+    );
+    if (hasCustomSize) {
+      return [...standardSizes, { value: 'custom', label: 'Custom Size' }];
+    }
+    return standardSizes;
+  }, [orders, paginatedCompletedOrders, standardSizeValues]);
 
-  // Label maps for color and size options
+  // Label map for color options
   const colorLabelMap = useMemo(() => {
     const map: Record<string, string> = {};
     colourOptions.forEach(option => map[option.value] = option.label);
-    return map;
-  }, []);
-
-  const sizeLabelMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    tableSizeOptions.forEach(option => map[option.value] = option.label);
     return map;
   }, []);
 
@@ -875,9 +886,9 @@ export function OrderList() {
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-[300px]">
                   <SelectItem value="all">All Sizes</SelectItem>
-                  {sizeOptions.map(size => (
-                    <SelectItem key={size} value={size}>
-                      {sizeLabelMap[size] || size}
+                  {sizeFilterOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
