@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Order, OrderStatus, DeliveryStatus } from '@/types/order';
+import { Order, OrderStatus, DeliveryStatus, colourOptions, tableSizeOptions } from '@/types/order';
 import { DatePicker } from '@/components/DatePicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,9 @@ export function OrderList() {
   const { userRole, user } = useAuth();
   const isMobile = useIsMobile();
   const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>('all');
+  const [selectedTopColor, setSelectedTopColor] = useState<string>('all');
+  const [selectedFrameColor, setSelectedFrameColor] = useState<string>('all');
+  const [selectedSize, setSelectedSize] = useState<string>('all');
   const [globalSearch, setGlobalSearch] = useState('');
   const [searchFilter, setSearchFilter] = useState<'all' | 'orderNumber' | 'customerName' | 'address'>('all');
   
@@ -92,22 +95,86 @@ export function OrderList() {
     );
   };
 
-  const pendingOrders = filterOrdersBySearch(getFilteredOrders('pending', selectedSalesPerson));
-  const assignedOrders = filterOrdersBySearch(getFilteredOrders('assigned', selectedSalesPerson));
+  // Filter orders by table properties (top color, frame color, size)
+  const filterOrdersByTableProps = (orderList: Order[]) => {
+    if (selectedTopColor === 'all' && selectedFrameColor === 'all' && selectedSize === 'all') {
+      return orderList;
+    }
+
+    return orderList.filter(order => 
+      order.tables.some(table => {
+        const topColorMatch = selectedTopColor === 'all' || table.topColour === selectedTopColor;
+        const frameColorMatch = selectedFrameColor === 'all' || table.frameColour === selectedFrameColor;
+        const sizeMatch = selectedSize === 'all' || table.size === selectedSize;
+        return topColorMatch && frameColorMatch && sizeMatch;
+      })
+    );
+  };
+
+  const pendingOrders = filterOrdersByTableProps(filterOrdersBySearch(getFilteredOrders('pending', selectedSalesPerson)));
+  const assignedOrders = filterOrdersByTableProps(filterOrdersBySearch(getFilteredOrders('assigned', selectedSalesPerson)));
   
-  // Use paginated completed orders from context, apply sales person filter
+  // Use paginated completed orders from context, apply sales person filter and table filters
   const completedOrders = useMemo(() => {
     let filtered = paginatedCompletedOrders;
     if (selectedSalesPerson && selectedSalesPerson !== 'all') {
       filtered = filtered.filter(order => order.salesPersonName === selectedSalesPerson);
     }
+    filtered = filterOrdersByTableProps(filtered);
     return filterOrdersBySearch(filtered);
-  }, [paginatedCompletedOrders, selectedSalesPerson, globalSearch, searchFilter]);
+  }, [paginatedCompletedOrders, selectedSalesPerson, selectedTopColor, selectedFrameColor, selectedSize, globalSearch, searchFilter]);
   
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
   const [deliveryCompletedOrders, setDeliveryCompletedOrders] = useState<Order[]>([]);
   const salesPersons = getSalesPersons();
+
+  // Derive available filter options from all orders (pending + assigned + completed)
+  const topColorOptions = useMemo(() => {
+    const colors = new Set<string>();
+    orders.forEach(order => order.tables.forEach(table => {
+      if (table.topColour) colors.add(table.topColour);
+    }));
+    paginatedCompletedOrders.forEach(order => order.tables.forEach(table => {
+      if (table.topColour) colors.add(table.topColour);
+    }));
+    return Array.from(colors).sort();
+  }, [orders, paginatedCompletedOrders]);
+
+  const frameColorOptions = useMemo(() => {
+    const colors = new Set<string>();
+    orders.forEach(order => order.tables.forEach(table => {
+      if (table.frameColour) colors.add(table.frameColour);
+    }));
+    paginatedCompletedOrders.forEach(order => order.tables.forEach(table => {
+      if (table.frameColour) colors.add(table.frameColour);
+    }));
+    return Array.from(colors).sort();
+  }, [orders, paginatedCompletedOrders]);
+
+  const sizeOptions = useMemo(() => {
+    const sizes = new Set<string>();
+    orders.forEach(order => order.tables.forEach(table => {
+      if (table.size) sizes.add(table.size);
+    }));
+    paginatedCompletedOrders.forEach(order => order.tables.forEach(table => {
+      if (table.size) sizes.add(table.size);
+    }));
+    return Array.from(sizes).sort();
+  }, [orders, paginatedCompletedOrders]);
+
+  // Label maps for color and size options
+  const colorLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    colourOptions.forEach(option => map[option.value] = option.label);
+    return map;
+  }, []);
+
+  const sizeLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    tableSizeOptions.forEach(option => map[option.value] = option.label);
+    return map;
+  }, []);
 
   // Apply date and customer name filters to completed orders
   const searchFilteredCompletedOrders = useMemo(() => {
@@ -178,6 +245,14 @@ export function OrderList() {
     setSearchToDate(undefined);
     setCustomerNameSearch('');
   };
+
+  const clearTableFilters = () => {
+    setSelectedTopColor('all');
+    setSelectedFrameColor('all');
+    setSelectedSize('all');
+  };
+
+  const hasActiveTableFilters = selectedTopColor !== 'all' || selectedFrameColor !== 'all' || selectedSize !== 'all';
 
   const hasActiveCompletedFilters = searchFromDate || searchToDate || customerNameSearch.trim();
 
@@ -728,28 +803,88 @@ export function OrderList() {
             </Select>
           </div>
         </div>
-        {/* Sales Person Filter */}
-        {salesPersons.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
+        {/* Table Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
               <Filter size={16} />
-              <label className="text-sm font-medium">Filter by Sales Person:</label>
+              <label className="text-sm font-medium">Filter by Table Details:</label>
             </div>
-            <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
-              <SelectTrigger className="w-full md:w-64">
-                <SelectValue placeholder="Select sales person" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                <SelectItem value="all">All Sales Persons</SelectItem>
-                {salesPersons.map(salesPerson => (
-                  <SelectItem key={salesPerson} value={salesPerson}>
-                    {salesPerson}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {hasActiveTableFilters && (
+              <Button variant="ghost" size="sm" onClick={clearTableFilters}>
+                Clear Table Filters
+              </Button>
+            )}
           </div>
-        )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {salesPersons.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Sales Person</label>
+                <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All sales persons" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                    <SelectItem value="all">All Sales Persons</SelectItem>
+                    {salesPersons.map(salesPerson => (
+                      <SelectItem key={salesPerson} value={salesPerson}>
+                        {salesPerson}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Top Color</label>
+              <Select value={selectedTopColor} onValueChange={setSelectedTopColor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All top colors" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                  <SelectItem value="all">All Top Colors</SelectItem>
+                  {topColorOptions.map(color => (
+                    <SelectItem key={color} value={color}>
+                      {colorLabelMap[color] || color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Frame Color</label>
+              <Select value={selectedFrameColor} onValueChange={setSelectedFrameColor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All frame colors" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                  <SelectItem value="all">All Frame Colors</SelectItem>
+                  {frameColorOptions.map(color => (
+                    <SelectItem key={color} value={color}>
+                      {colorLabelMap[color] || color}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Size</label>
+              <Select value={selectedSize} onValueChange={setSelectedSize}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All sizes" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-[300px]">
+                  <SelectItem value="all">All Sizes</SelectItem>
+                  {sizeOptions.map(size => (
+                    <SelectItem key={size} value={size}>
+                      {sizeLabelMap[size] || size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
         <Tabs defaultValue="pending">
           <TabsList className="grid w-full grid-cols-3 gap-1">

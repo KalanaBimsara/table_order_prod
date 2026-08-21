@@ -88,7 +88,7 @@ export const tableSizeOptions = [
   { value: 'DL (60x36)', label: '60x36 Dinning', price: 17000 },
 
   // L-Shaped Tables - increased by 1000
-  { value: 'L-A', label: 'L-Shaped Table (Size A)', price: 25000 },
+  { value: 'L-A', label: 'L-Shaped Table (Size A)', price: 24000 },
   { value: 'L-B', label: 'L-Shaped Table (Size B)', price: 25000 },
   { value: 'L-C', label: 'L-Shaped Table (Size C)', price: 25000 },
   { value: 'L-D', label: 'L-Shaped Table (Size D)', price: 27000 },
