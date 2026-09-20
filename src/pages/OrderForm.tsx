@@ -387,8 +387,8 @@ const OrderForm: React.FC = () => {
             zIndex: 5
           }}>
             <h1 className="text-sm font-bold" style={{ color: colors.text }}>BOSS FURNITURE (PVT) LTD.</h1>
-            <p className="text-xs" style={{ color: colors.text }}>No. 31/A/02, Gammanpila, Bandaragama.</p>
-            <p className="text-xs" style={{ color: colors.text }}>Tel: 075 166 3775 / 078 844 3776</p>
+            {/*<p className="text-xs" style={{ color: colors.text }}>No. 31/A/02, Gammanpila, Bandaragama.</p>*/}
+            {/*<p className="text-xs" style={{ color: colors.text }}>Tel: 075 166 3775 / 078 844 3776</p>*/}
           </div>
 
           {/* Copy Label - Fixed at Top Left */}
