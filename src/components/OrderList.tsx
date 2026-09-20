@@ -8,6 +8,7 @@ import { Package, Truck, CheckCircle2, ShoppingBag, Filter, Calendar, Search } f
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrderSearch } from '@/hooks/useOrderSearch';
 import { toast } from '@/hooks/use-toast';
 import { Order, OrderStatus, DeliveryStatus, colourOptions, tableSizeOptions } from '@/types/order';
 import { DatePicker } from '@/components/DatePicker';
@@ -121,18 +122,35 @@ export function OrderList() {
     );
   };
 
-  const pendingOrders = filterOrdersByTableProps(filterOrdersBySearch(getFilteredOrders('pending', selectedSalesPerson)));
-  const assignedOrders = filterOrdersByTableProps(filterOrdersBySearch(getFilteredOrders('assigned', selectedSalesPerson)));
+  // Server-side search (searches the whole database, not just loaded orders)
+  const { results: searchResults, loading: searchLoading, active: searchActive } = useOrderSearch(globalSearch, searchFilter);
+
+  const searchResultsForStatus = (status: OrderStatus) => {
+    let list = searchResults.filter(order => order.status === status);
+    if (selectedSalesPerson && selectedSalesPerson !== 'all') {
+      list = list.filter(order => order.salesPersonName === selectedSalesPerson);
+    }
+    return list;
+  };
+
+  const pendingOrders = filterOrdersByTableProps(
+    searchActive ? searchResultsForStatus('pending') : getFilteredOrders('pending', selectedSalesPerson)
+  );
+  const assignedOrders = filterOrdersByTableProps(
+    searchActive ? searchResultsForStatus('assigned') : getFilteredOrders('assigned', selectedSalesPerson)
+  );
   
   // Use paginated completed orders from context, apply sales person filter and table filters
   const completedOrders = useMemo(() => {
+    if (searchActive) {
+      return filterOrdersByTableProps(searchResultsForStatus('completed'));
+    }
     let filtered = paginatedCompletedOrders;
     if (selectedSalesPerson && selectedSalesPerson !== 'all') {
       filtered = filtered.filter(order => order.salesPersonName === selectedSalesPerson);
     }
-    filtered = filterOrdersByTableProps(filtered);
-    return filterOrdersBySearch(filtered);
-  }, [paginatedCompletedOrders, selectedSalesPerson, selectedTopColor, selectedFrameColor, selectedSize, globalSearch, searchFilter]);
+    return filterOrdersByTableProps(filtered);
+  }, [paginatedCompletedOrders, selectedSalesPerson, selectedTopColor, selectedFrameColor, selectedSize, searchActive, searchResults]);
   
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
@@ -813,6 +831,11 @@ export function OrderList() {
               </SelectContent>
             </Select>
           </div>
+          {searchActive && (
+            <p className="text-xs text-muted-foreground">
+              {searchLoading ? 'Searching all orders…' : `Showing ${searchResults.length} matching order(s) from the database.`}
+            </p>
+          )}
         </div>
         {/* Table Filters */}
         <div className="mb-6 space-y-4">
@@ -1042,7 +1065,7 @@ export function OrderList() {
                 )}
 
                 {/* Show More Button */}
-                {!hasActiveCompletedFilters && hasMoreCompleted && sortedCompletedDateKeys.length > 0 && (
+                {!searchActive && !hasActiveCompletedFilters && hasMoreCompleted && sortedCompletedDateKeys.length > 0 && (
                   <div className="flex justify-center pt-4">
                     <Button 
                       onClick={loadMoreCompletedOrders}
