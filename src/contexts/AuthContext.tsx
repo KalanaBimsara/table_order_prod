@@ -10,6 +10,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   userRole: UserRole | null;
+  canViewAllOrders: boolean;
   loading: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string, role: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -22,11 +23,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [canViewAllOrders, setCanViewAllOrders] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const isSigningUp = useRef(false);
 
   useEffect(() => {
+    const loadPermissions = async (userId: string) => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role, can_view_all_orders')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const profile = data as { role?: string | null; can_view_all_orders?: boolean | null } | null;
+      const isManager = profile?.role === 'manager';
+      setCanViewAllOrders(isManager || profile?.can_view_all_orders === true);
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -37,8 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch user role from metadata
           const role = session.user.user_metadata.role as UserRole;
           setUserRole(role);
+          setTimeout(() => loadPermissions(session.user.id), 0);
         } else {
           setUserRole(null);
+          setCanViewAllOrders(false);
         }
         
         if (event === 'SIGNED_IN') {
@@ -64,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch user role from metadata
         const role = session.user.user_metadata.role as UserRole;
         setUserRole(role);
+        loadPermissions(session.user.id);
       }
       
       setLoading(false);
@@ -141,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         user,
         userRole,
+        canViewAllOrders,
         loading,
         signUp,
         signIn,

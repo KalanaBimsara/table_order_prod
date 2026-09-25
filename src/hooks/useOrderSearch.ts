@@ -63,7 +63,7 @@ const escapeTerm = (term: string) => term.replace(/[%,()]/g, ' ').trim();
  * debounced, so completed orders outside the loaded 30 are still found.
  */
 export function useOrderSearch(term: string, field: SearchField) {
-  const { user, userRole } = useAuth();
+  const { user, userRole, canViewAllOrders } = useAuth();
   const [results, setResults] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -118,6 +118,8 @@ export function useOrderSearch(term: string, field: SearchField) {
           query = query.eq('created_by', user.id);
         } else if (userRole === 'delivery') {
           query = query.eq('delivery_person_id', user.id);
+        } else if (!canViewAllOrders) {
+          query = query.eq('created_by', user.id);
         }
 
         const { data: ordersData, error } = await query;
@@ -147,7 +149,7 @@ export function useOrderSearch(term: string, field: SearchField) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [trimmed, field, active, user?.id, userRole]);
+  }, [trimmed, field, active, user?.id, userRole, canViewAllOrders]);
 
   return { results, loading, active };
 }

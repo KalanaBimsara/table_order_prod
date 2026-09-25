@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Trash2, Edit, KeyRound, RefreshCw, Users, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 type UserProfile = {
   id: string;
@@ -19,6 +20,7 @@ type UserProfile = {
   contact_no: string | null;
   email: string | null;
   created_at: string;
+  can_view_all_orders?: boolean | null;
 };
 
 const SystemUserManagement = () => {
@@ -33,6 +35,31 @@ const SystemUserManagement = () => {
   const [newPassword, setNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savingVisibilityId, setSavingVisibilityId] = useState<string | null>(null);
+
+  const handleVisibilityChange = async (user: UserProfile, canViewAll: boolean) => {
+    try {
+      setSavingVisibilityId(user.id);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ can_view_all_orders: canViewAll } as any)
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, can_view_all_orders: canViewAll } : u)));
+      toast.success(
+        canViewAll
+          ? `${user.name || 'User'} can now see all orders`
+          : `${user.name || 'User'} can now see only their own orders`
+      );
+    } catch (error: any) {
+      console.error('Error updating order visibility:', error);
+      toast.error('Failed to update order visibility');
+    } finally {
+      setSavingVisibilityId(null);
+    }
+  };
 
   useEffect(() => {
     loadUsers();
@@ -235,6 +262,7 @@ const SystemUserManagement = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Order Visibility</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -250,6 +278,22 @@ const SystemUserManagement = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>{user.contact_no || 'N/A'}</TableCell>
+                  <TableCell>
+                    {user.role === 'manager' ? (
+                      <span className="text-xs text-muted-foreground">All orders (role)</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={!!user.can_view_all_orders}
+                          disabled={savingVisibilityId === user.id}
+                          onCheckedChange={(checked) => handleVisibilityChange(user, checked)}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {user.can_view_all_orders ? 'All orders' : 'Own orders only'}
+                        </span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

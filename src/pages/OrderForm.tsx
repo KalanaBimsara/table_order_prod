@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Printer, Edit, X, Save, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { Order } from '@/types/order';
+import { Order, TableItem, tableSizeOptions } from '@/types/order';
 import QRCode from 'qrcode';
 
 const FORM_COPIES = [
@@ -17,6 +17,20 @@ const FORM_COPIES = [
 ] as const;
 
 const getQrCodeKey = (tableIndex: number, copyLabel: string) => `${tableIndex}-${copyLabel}`;
+
+const normalizeSpecification = (value: unknown) => String(value ?? '').trim().toLowerCase().replace(/["'\s-]/g, '');
+const standardTableSizes = new Set(tableSizeOptions.map(option => normalizeSpecification(option.value)));
+
+const getCustomizationFlags = (table: TableItem) => ({
+  size: !standardTableSizes.has(normalizeSpecification(table.size)),
+  wireHoles: !!table.wireHoles && normalizeSpecification(table.wireHoles) !== 'normal',
+  legSize: !!table.legSize && normalizeSpecification(table.legSize) !== '1.5x1.5',
+  legShape: !!table.legShape && normalizeSpecification(table.legShape) !== 'oshape',
+  legHeight: !!table.legHeight && normalizeSpecification(table.legHeight).replace(/inches?|in/g, '') !== '30',
+  lShapeOrientation: normalizeSpecification(table.lShapeOrientation) === 'reverse',
+});
+
+const isCustomizedTable = (table: TableItem) => Object.values(getCustomizationFlags(table)).some(Boolean);
 
 const OrderForm: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -325,7 +339,7 @@ const OrderForm: React.FC = () => {
       copyNumber: number;
       colorName: 'cyan' | 'magenta' | 'yellow' | 'black';
       copyLabel: string;
-      singleTable: any;
+      singleTable: TableItem;
       tableIndex: number;
     }) => {
     const colorStyles = {
@@ -339,10 +353,13 @@ const OrderForm: React.FC = () => {
     const formattedOrderNumber = order.orderFormNumber || '000000';
     const qrCode = qrCodes[getQrCodeKey(tableIndex, copyLabel)];
     
-    // Check if order has customizations
-    const hasCustomizations = order.tables.some(table => 
-      table.size?.toLowerCase().includes('custom')
-    );
+    const customizationFlags = getCustomizationFlags(singleTable);
+    const hasCustomizations = isCustomizedTable(singleTable);
+    const highlightedValueStyle = { color: '#dc2626', fontWeight: '700' } as const;
+    const specificationStyle = (highlighted: boolean) => ({
+      borderColor: colors.border,
+      ...(highlighted ? highlightedValueStyle : {}),
+    });
     
     return (
       <div className="form-copy" style={{ height: '50vh', pageBreakAfter:!(tableIndex === order.tables.length - 1 && copyNumber === 4)? 'always': 'auto', pageBreakInside: 'avoid' }}>
@@ -359,18 +376,19 @@ const OrderForm: React.FC = () => {
           {hasCustomizations && (
             <div style={{
               position: 'absolute',
-              bottom: '20px',
-              right: '20px',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '8px',
+              top: '42px',
+              left: '50%',
+              color: '#dc2626',
+              padding: '5px 18px',
+              borderRadius: '4px',
               fontWeight: 'bold',
-              fontSize: '14px',
-              border: '3px solid #991b1b',
-              transform: 'rotate(-5deg)',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              zIndex: 10
+              fontSize: '18px',
+              lineHeight: '1',
+              border: '3px solid #dc2626',
+              transform: 'translateX(-50%) rotate(-3deg)',
+              zIndex: 10,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none'
             }}>
               CUSTOM ORDER
             </div>
@@ -471,15 +489,15 @@ const OrderForm: React.FC = () => {
               </thead>
               <tbody>
                 <tr className="border-b" style={{ borderColor: colors.border }}>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.size}</td>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.size)}>{singleTable.size}</td>
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.topColour || singleTable.colour}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.wireHoles || 'normal'}</td>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.wireHoles)}>{singleTable.wireHoles || 'normal'}</td>
                   <td className="border-r p-1 text-center font-bold" style={{ borderColor: colors.border }}>{singleTable.quantity}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legSize || ''}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legShape || ''}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.legHeight || ''}</td>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.legSize)}>{singleTable.legSize || ''}</td>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.legShape)}>{singleTable.legShape || ''}</td>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.legHeight)}>{singleTable.legHeight || ''}</td>
                   <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>{singleTable.frameColour || ''}</td>
-                  <td className="border-r p-1 text-center" style={{ borderColor: colors.border }}>
+                  <td className="border-r p-1 text-center" style={specificationStyle(customizationFlags.lShapeOrientation)}>
                     {singleTable.lShapeOrientation ? singleTable.lShapeOrientation.charAt(0).toUpperCase() + singleTable.lShapeOrientation.slice(1) : ''}
                   </td>
                   

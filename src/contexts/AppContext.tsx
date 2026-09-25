@@ -39,13 +39,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loadingMoreCompleted, setLoadingMoreCompleted] = useState(false);
   const [completedOrdersOffset, setCompletedOrdersOffset] = useState(0);
   const [deliveryPeople, setDeliveryPeople] = useState<DeliveryPerson[]>([]);
-  const { user, userRole } = useAuth();
+  const { user, userRole, canViewAllOrders } = useAuth();
 
   useEffect(() => {
     fetchOrders();
     fetchCompletedOrders(true); // Fetch initial completed orders
     fetchDeliveryPeople();
-  }, [user, userRole]);
+  }, [user, userRole, canViewAllOrders]);
 
   const fetchDeliveryPeople = async () => {
     try {
@@ -89,6 +89,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.eq('created_by', user.id);
       } else if (userRole === 'delivery') {
         query = query.eq('delivery_person_id', user.id);
+      } else if (!canViewAllOrders) {
+        query = query.eq('created_by', user.id);
       }
 
       const { data: ordersData, error: ordersError } = await query;
@@ -203,6 +205,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         query = query.eq('created_by', user.id);
       } else if (userRole === 'delivery') {
         query = query.eq('status', 'assigned');
+      } else if (!canViewAllOrders) {
+        query = query.eq('created_by', user.id);
       }
   
       const { data: ordersData, error: ordersError } = await query;
