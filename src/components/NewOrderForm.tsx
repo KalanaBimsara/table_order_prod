@@ -17,6 +17,7 @@ import TableItemForm from './TableItemForm';
 import { TableItem } from '@/types/order';
 import { calculateTableAdditionalCosts, calculateLegSizeCost, calculateFrontPanelCost } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchOrderTablesByOrderIds } from '@/lib/fetchOrderTables';
 import { addDays, format } from 'date-fns';
 import {
   AlertDialog,
@@ -48,10 +49,7 @@ async function calculateDeliveryDate(): Promise<string> {
     const orderIds = pendingOrders.map(o => o.id);
 
     // Fetch all order_tables for pending orders to get total units
-    const { data: orderTables, error: tablesError } = await supabase
-      .from('order_tables')
-      .select('quantity')
-      .in('order_id', orderIds);
+    const { data: orderTables, error: tablesError } = await fetchOrderTablesByOrderIds(orderIds);
 
     if (tablesError) throw tablesError;
 

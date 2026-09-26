@@ -8,6 +8,7 @@ import { Package, Truck, CheckCircle2, ShoppingBag, Filter, Calendar, Search } f
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchOrderTablesByOrderIds } from '@/lib/fetchOrderTables';
 import { useOrderSearch } from '@/hooks/useOrderSearch';
 import { toast } from '@/hooks/use-toast';
 import { Order, OrderStatus, DeliveryStatus, colourOptions, tableSizeOptions } from '@/types/order';
@@ -313,7 +314,7 @@ export function OrderList() {
       const orderIds = ordersData.map(o => o.id);
 
       const [{ data: tablesData, error: tablesError }] = await Promise.all([
-        supabase.from('order_tables').select('*').in('order_id', orderIds)
+        fetchOrderTablesByOrderIds(orderIds)
       ]);
       if (tablesError) throw tablesError;
 
@@ -385,7 +386,7 @@ export function OrderList() {
 
       // Fetch related table data in parallel
       const [{ data: tablesData, error: tablesError }] = await Promise.all([
-        supabase.from('order_tables').select('*').in('order_id', orderIds)
+        fetchOrderTablesByOrderIds(orderIds)
       ]);
       if (tablesError) throw tablesError;
 
@@ -456,7 +457,7 @@ export function OrderList() {
       const orderIds = ordersData.map(o => o.id);
 
       const [{ data: tablesData, error: tablesError }] = await Promise.all([
-        supabase.from('order_tables').select('*').in('order_id', orderIds)
+        fetchOrderTablesByOrderIds(orderIds)
       ]);
       if (tablesError) throw tablesError;
 

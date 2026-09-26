@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchOrderTablesByOrderIds } from '@/lib/fetchOrderTables';
 import { Filter, Package, Clock, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -68,10 +69,7 @@ const UnitsFilterPanel = () => {
       const orderIds = orders.map(o => o.id);
 
       // Fetch all order_tables for these orders
-      const { data: orderTables, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('order_id, quantity')
-        .in('order_id', orderIds);
+      const { data: orderTables, error: tablesError } = await fetchOrderTablesByOrderIds(orderIds);
 
       if (tablesError) throw tablesError;
 

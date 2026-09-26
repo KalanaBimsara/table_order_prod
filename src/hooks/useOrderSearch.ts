@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchOrderTablesByOrderIds } from '@/lib/fetchOrderTables';
 import { useAuth } from '@/contexts/AuthContext';
 import { Order, OrderStatus } from '@/types/order';
 
@@ -128,7 +129,7 @@ export function useOrderSearch(term: string, field: SearchField) {
         const ids = (ordersData || []).map(o => o.id);
         let tablesData: any[] = [];
         if (ids.length > 0) {
-          const { data } = await supabase.from('order_tables').select('*').in('order_id', ids);
+          const { data } = await fetchOrderTablesByOrderIds(ids);
           tablesData = data || [];
         }
 

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateTableAdditionalCosts } from '@/lib/utils';
+import { fetchOrderTablesByOrderIds } from '@/lib/fetchOrderTables';
 
 interface AppContextType {
   orders: Order[];
@@ -116,10 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       let tablesData: any[] = [];
       if (orderIds.length > 0) {
-        const { data, error: tablesError } = await supabase
-          .from('order_tables')
-          .select('*')
-          .in('order_id', orderIds);
+        const { data, error: tablesError } = await fetchOrderTablesByOrderIds(orderIds);
 
         if (!tablesError && data) {
           tablesData = data;
@@ -231,10 +229,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Only fetch tables if we have valid order IDs
     let tablesData = [];
     if (orderIds.length > 0) {
-      const { data, error: tablesError } = await supabase
-        .from('order_tables')
-        .select('*')
-        .in('order_id', orderIds);
+      const { data, error: tablesError } = await fetchOrderTablesByOrderIds(orderIds);
 
       if (tablesError) {
         console.error('Error fetching order tables:', tablesError);
