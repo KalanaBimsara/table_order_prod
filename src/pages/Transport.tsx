@@ -44,6 +44,10 @@ type ReportKind = 'driver' | 'manager';
 
 interface OrderTableSummary {
   quantity: number;
+  size: string;
+  colour: string | null;
+  top_colour: string | null;
+  frame_colour: string | null;
 }
 
 interface OrderRow {
@@ -77,7 +81,17 @@ const buildReportHtml = (kind: ReportKind, rows: OrderRow[], rangeLabel: string)
 
   const headers = isManager
     ? ['දිනය', 'ඕඩර අංකය', 'විකුණුම්කරු', 'ලිපිනය', 'දු. අංකය', 'ලැබිය යුතු මුදල', 'මුදල් ලැබුණු ආකාරය', 'ලැබුණු වටිනාකම', 'ලැබීම්', 'ගෙවීම්']
-    : ['දිනය', 'ඕඩර අංකය', 'විකුණුම්කරු', 'ලිපිනය', 'දු. අංකය', 'ලැබිය යුතු මුදල', 'මුදල් ලැබුණු ආකාරය', 'ලැබුණු වටිනාකම'];
+    : ['ඕඩර අංකය', 'විකුණුම්කරු', 'ලිපිනය', 'දු. අංකය', 'මේස (ප්‍රමාණය / වර්ණය)', 'ලැබිය යුතු මුදල', 'මුදල් ලැබුණු ආකාරය', 'ලැබුණු වටිනාකම'];
+
+  const formatTables = (tables: OrderTableSummary[] | null) => {
+    if (!tables || tables.length === 0) return '';
+    return tables
+      .map((t) => {
+        const colors = [t.top_colour, t.frame_colour].filter(Boolean).join(' / ') || t.colour || '';
+        return `${t.size}${colors ? ` (${colors})` : ''} × ${t.quantity}`;
+      })
+      .join('<br/>');
+  };
 
   const formatAmount = (n: number | null) => {
     if (n === null || n === undefined || isNaN(Number(n))) return '';
@@ -86,12 +100,22 @@ const buildReportHtml = (kind: ReportKind, rows: OrderRow[], rangeLabel: string)
 
   const bodyRows = rows
     .map((r) => {
-      const base = `
+      const base = isManager
+        ? `
         <td></td>
         <td>${r.order_form_number ?? ''}</td>
         <td>${r.sales_person_name ?? ''}</td>
         <td>${r.address ?? ''}</td>
         <td>${r.contact_number ?? ''}</td>
+        <td class="num">${formatAmount(r.price)}</td>
+        <td></td>
+        <td class="num"></td>`
+        : `
+        <td>${r.order_form_number ?? ''}</td>
+        <td>${r.sales_person_name ?? ''}</td>
+        <td>${r.address ?? ''}</td>
+        <td>${r.contact_number ?? ''}</td>
+        <td>${formatTables(r.order_tables)}</td>
         <td class="num">${formatAmount(r.price)}</td>
         <td></td>
         <td class="num"></td>`;
@@ -120,13 +144,13 @@ const buildReportHtml = (kind: ReportKind, rows: OrderRow[], rangeLabel: string)
         <col style="width:8%"/>
       </colgroup>`
     : `<colgroup>
-        <col style="width:8%"/>
-        <col style="width:8%"/>
-        <col style="width:13%"/>
-        <col style="width:27%"/>
-        <col style="width:13%"/>
-        <col style="width:9%"/>
+        <col style="width:7%"/>
         <col style="width:11%"/>
+        <col style="width:20%"/>
+        <col style="width:11%"/>
+        <col style="width:18%"/>
+        <col style="width:10%"/>
+        <col style="width:12%"/>
         <col style="width:11%"/>
       </colgroup>`;
 
@@ -206,7 +230,7 @@ const Transport: React.FC = () => {
       };
 
       const baseSelect =
-        'id, order_form_number, sales_person_name, customer_name, address, contact_number, price, delivery_fee, additional_charges, completed_at, delivery_date, created_at, status, order_tables(quantity)';
+        'id, order_form_number, sales_person_name, customer_name, address, contact_number, price, delivery_fee, additional_charges, completed_at, delivery_date, created_at, status, order_tables(quantity, size, colour, top_colour, frame_colour)';
 
       let reportQ = supabase
         .from('orders')
