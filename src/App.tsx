@@ -29,6 +29,7 @@ import SuperAdminProtectedRoute from "@/components/SuperAdminProtectedRoute";
 import PublicOrderForm from "./pages/PublicOrderForm";
 import OrderTracking from "./pages/OrderTracking";
 import Transport from "./pages/Transport";
+import DispatchReturn from "./pages/DispatchReturn";
 
 const queryClient = new QueryClient();
 
@@ -158,6 +159,14 @@ const App = () => {
                                 element={
                                   <ProtectedRoute allowedRoles={['admin', 'manager']}>
                                     <Transport />
+                                  </ProtectedRoute>
+                                } 
+                              />
+                              <Route 
+                                path="/dispatch-return" 
+                                element={
+                                  <ProtectedRoute allowedRoles={['admin', 'manager']}>
+                                    <DispatchReturn />
                                   </ProtectedRoute>
                                 } 
                               />

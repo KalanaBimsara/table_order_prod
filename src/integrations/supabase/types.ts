@@ -133,6 +133,71 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_return_logs: {
+        Row: {
+          colour: string | null
+          copy_type: string | null
+          created_at: string
+          customer_district: string | null
+          customer_name: string | null
+          device_id: string
+          id: string
+          notes: string | null
+          operation_mode: string
+          order_form_number: string
+          order_id: string | null
+          quantity: number
+          restocked: boolean
+          scanner_name: string
+          table_size: string | null
+          vehicle_number: string
+        }
+        Insert: {
+          colour?: string | null
+          copy_type?: string | null
+          created_at?: string
+          customer_district?: string | null
+          customer_name?: string | null
+          device_id?: string
+          id?: string
+          notes?: string | null
+          operation_mode: string
+          order_form_number: string
+          order_id?: string | null
+          quantity?: number
+          restocked?: boolean
+          scanner_name?: string
+          table_size?: string | null
+          vehicle_number?: string
+        }
+        Update: {
+          colour?: string | null
+          copy_type?: string | null
+          created_at?: string
+          customer_district?: string | null
+          customer_name?: string | null
+          device_id?: string
+          id?: string
+          notes?: string | null
+          operation_mode?: string
+          order_form_number?: string
+          order_id?: string | null
+          quantity?: number
+          restocked?: boolean
+          scanner_name?: string
+          table_size?: string | null
+          vehicle_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_return_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_analytics: {
         Row: {
           avg_order_value: number | null
@@ -553,25 +618,31 @@ export type Database = {
       }
       transport: {
         Row: {
+          copy_name: string | null
           id: string
           loaded_at: string
           loaded_by: string | null
           order_id: string
           transport_mode: string
+          transport_status: string | null
         }
         Insert: {
+          copy_name?: string | null
           id?: string
           loaded_at?: string
           loaded_by?: string | null
           order_id: string
           transport_mode: string
+          transport_status?: string | null
         }
         Update: {
+          copy_name?: string | null
           id?: string
           loaded_at?: string
           loaded_by?: string | null
           order_id?: string
           transport_mode?: string
+          transport_status?: string | null
         }
         Relationships: [
           {
