@@ -117,6 +117,7 @@ const DispatchReturn = () => {
       let query = supabase
         .from('dispatch_return_logs')
         .select('*')
+        .ilike('copy_type', 'gate pass')
         .order('created_at', { ascending: false })
         .limit(5000);
 
@@ -372,7 +373,7 @@ const DispatchReturn = () => {
                 Dispatch &amp; Return
               </CardTitle>
               <CardDescription>
-                Scanned dispatch and return records. Dates and times are in Sri Lanka time.
+                Scanned gate pass copies — dispatched and returned records. Dates and times are in Sri Lanka time.
               </CardDescription>
             </div>
             <div className="flex gap-2">
