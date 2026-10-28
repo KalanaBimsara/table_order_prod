@@ -1,32 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Search, Truck, Package, ScanLine } from 'lucide-react';
+import { Search, ScanLine, FileSpreadsheet, Download, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-interface Order {
-  id: string;
-  order_form_number: string | null;
-  table_size: string;
-  colour: string;
-  quantity: number;
-  status: string | null;
-  created_at: string | null;
-  order_tables?: {
-    size: string;
-    top_colour: string | null;
-    frame_colour: string | null;
-    quantity: number;
-  }[];
-}
+import * as XLSX from 'xlsx';
+import { cn } from '@/lib/utils';
 
 // The system is used in Sri Lanka (Asia/Colombo, UTC+5:30).
 const SL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -36,11 +21,23 @@ const formatSl = (iso: string) => {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 };
 
+// Display copy types stored in UPPER CASE (e.g. "PRODUCTION COPY") as title case.
+const formatCopyType = (value: string | null) =>
+  value ? value.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : '';
+
+// Convert a Sri Lanka local datetime-local value to a UTC ISO string.
+const slLocalToUtcIso = (local: string, endOfMinute = false) => {
+  if (!local) return null;
+  const ms = new Date(local).getTime() - SL_OFFSET_MS;
+  return new Date(endOfMinute ? ms + 59_999 : ms).toISOString();
+};
+
 interface ProductionScan {
   id: string;
   order_id: string | null;
   order_form_number: string;
   operation_mode: string;
+  copy_type: string | null;
   vehicle_number: string;
   scanner_name: string;
   device_id: string;
@@ -53,176 +50,145 @@ interface ProductionScan {
   created_at: string;
 }
 
-const TRANSPORT_MODES = [
-  'Vehicle Number 1',
-  'Vehicle Number 2',
-  'Vehicle Number 3',
-  'Vehicle Number 4',
-  'Pick Me',
-  'Factory Pick Up'
-];
+const SCAN_TABS = {
+  production: {
+    label: 'Production Scans',
+    copyType: 'production copy',
+    Icon: ScanLine,
+    headClass: 'bg-primary/[0.08] text-primary',
+    rowClass: 'hover:bg-primary/[0.04]',
+    triggerClass: 'data-[state=active]:bg-primary data-[state=active]:text-primary-foreground',
+  },
+  account: {
+    label: 'Account Copy Scans',
+    copyType: 'account copy',
+    Icon: FileSpreadsheet,
+    headClass: 'bg-secondary/40 text-foreground',
+    rowClass: 'hover:bg-secondary/20',
+    triggerClass: 'data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground',
+  },
+} as const;
+
+type ScanTabKey = keyof typeof SCAN_TABS;
 
 const Production = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [transportMode, setTransportMode] = useState('');
-  const [showTransportDialog, setShowTransportDialog] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [processingLoad, setProcessingLoad] = useState(false);
   const [scans, setScans] = useState<ProductionScan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [vehicleFilter, setVehicleFilter] = useState('all');
+  const [scannerFilter, setScannerFilter] = useState('all');
+  const [districtFilter, setDistrictFilter] = useState('all');
   const [openingScanOrder, setOpeningScanOrder] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const fetchOrders = async () => {
+  const fetchScans = async () => {
     setLoading(true);
     try {
-      // Fetch pending orders
-      const { data: pendingData, error: pendingError } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_form_number,
-          table_size,
-          colour,
-          quantity,
-          status,
-          created_at,
-          order_tables (
-            size,
-            top_colour,
-            frame_colour,
-            quantity
-          )
-        `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (pendingError) throw pendingError;
-      setOrders(pendingData || []);
-
-      // Fetch completed orders
-      const { data: completedData, error: completedError } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_form_number,
-          table_size,
-          colour,
-          quantity,
-          status,
-          created_at,
-          order_tables (
-            size,
-            top_colour,
-            frame_colour,
-            quantity
-          )
-        `)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (completedError) throw completedError;
-      setCompletedOrders(completedData || []);
-
-      // Fetch production copy scans
-      const { data: scanData, error: scanError } = await supabase
+      const { data, error } = await supabase
         .from('dispatch_return_logs')
         .select('*')
-        .ilike('copy_type', 'production copy')
+        .or('copy_type.ilike.production copy,copy_type.ilike.account copy')
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .limit(2000);
 
-      if (scanError) throw scanError;
-      setScans((scanData as ProductionScan[]) || []);
+      if (error) throw error;
+      setScans((data as ProductionScan[]) || []);
     } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast.error('Failed to fetch orders');
+      console.error('Error fetching scans:', error);
+      toast.error('Failed to fetch scan records');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchScans();
   }, []);
 
-  const handleLoadClick = (order: Order) => {
-    setSelectedOrder(order);
-    setTransportMode('');
-    setShowTransportDialog(true);
+  const vehicleOptions = useMemo(
+    () => [...new Set(scans.map(s => s.vehicle_number).filter(Boolean))].sort(),
+    [scans]
+  );
+  const scannerOptions = useMemo(
+    () => [...new Set(scans.map(s => s.scanner_name).filter(Boolean))].sort(),
+    [scans]
+  );
+  const districtOptions = useMemo(
+    () => [...new Set(scans.map(s => s.customer_district).filter(Boolean))].sort(),
+    [scans]
+  );
+
+  const hasActiveFilters =
+    searchQuery || fromDate || toDate ||
+    vehicleFilter !== 'all' || scannerFilter !== 'all' || districtFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFromDate('');
+    setToDate('');
+    setVehicleFilter('all');
+    setScannerFilter('all');
+    setDistrictFilter('all');
   };
 
-  const handleTransportSelect = () => {
-    if (!transportMode) {
-      toast.error('Please select a transport mode');
+  const filterScans = (tab: ScanTabKey) => {
+    const q = searchQuery.toLowerCase();
+    const fromIso = slLocalToUtcIso(fromDate);
+    const toIso = slLocalToUtcIso(toDate, true);
+    return scans.filter(scan => {
+      if (!scan.copy_type?.toLowerCase().includes(SCAN_TABS[tab].copyType)) return false;
+      if (fromIso && scan.created_at < fromIso) return false;
+      if (toIso && scan.created_at > toIso) return false;
+      if (vehicleFilter !== 'all' && scan.vehicle_number !== vehicleFilter) return false;
+      if (scannerFilter !== 'all' && scan.scanner_name !== scannerFilter) return false;
+      if (districtFilter !== 'all' && scan.customer_district !== districtFilter) return false;
+      if (!q) return true;
+      return (
+        scan.order_form_number?.toLowerCase().includes(q) ||
+        scan.copy_type?.toLowerCase().includes(q) ||
+        scan.customer_name?.toLowerCase().includes(q) ||
+        scan.scanner_name?.toLowerCase().includes(q) ||
+        scan.vehicle_number?.toLowerCase().includes(q) ||
+        scan.table_size?.toLowerCase().includes(q) ||
+        scan.colour?.toLowerCase().includes(q) ||
+        scan.notes?.toLowerCase().includes(q)
+      );
+    });
+  };
+
+  const exportToExcel = (tab: ScanTabKey) => {
+    const rows = filterScans(tab).map(scan => ({
+      'Date & Time (SL)': formatSl(scan.created_at),
+      'Order No': scan.order_form_number,
+      'Copy Type': formatCopyType(scan.copy_type),
+      'Customer': scan.customer_name || '',
+      'District': scan.customer_district || '',
+      'Size': scan.table_size || '',
+      'Colour': scan.colour || '',
+      'Qty': scan.quantity,
+      'Vehicle / Driver': scan.vehicle_number || '',
+      'Scanner': scan.scanner_name || '',
+      'Device': scan.device_id || '',
+      'Notes': scan.notes || '',
+    }));
+
+    if (rows.length === 0) {
+      toast.error('No records to export');
       return;
     }
-    setShowTransportDialog(false);
-    setShowConfirmDialog(true);
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet['!cols'] = [
+      { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 12 },
+      { wch: 12 }, { wch: 6 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 30 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, SCAN_TABS[tab].label);
+    XLSX.writeFile(workbook, `${SCAN_TABS[tab].copyType.replace(' ', '-')}-scans.xlsx`);
+    toast.success('Excel file downloaded');
   };
-
-  const handleConfirmLoad = async () => {
-    if (!selectedOrder || !transportMode) return;
-
-    setProcessingLoad(true);
-    try {
-      // Insert transport record
-      const { error: transportError } = await supabase
-        .from('transport')
-        .insert({
-          order_id: selectedOrder.id,
-          transport_mode: transportMode
-        });
-
-      if (transportError) throw transportError;
-
-      // Update order status to completed
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', selectedOrder.id);
-
-      if (orderError) throw orderError;
-
-      toast.success('Order loaded successfully');
-      setShowConfirmDialog(false);
-      setSelectedOrder(null);
-      setTransportMode('');
-      
-      // Refresh orders
-      fetchOrders();
-    } catch (error) {
-      console.error('Error loading order:', error);
-      toast.error('Failed to load order');
-    } finally {
-      setProcessingLoad(false);
-    }
-  };
-
-  const filteredOrders = orders.filter(order => 
-    order.order_form_number?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredCompletedOrders = completedOrders.filter(order => 
-    order.order_form_number?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredScans = scans.filter(scan => {
-    const q = searchQuery.toLowerCase();
-    return (
-      scan.order_form_number?.toLowerCase().includes(q) ||
-      scan.customer_name?.toLowerCase().includes(q) ||
-      scan.scanner_name?.toLowerCase().includes(q) ||
-      scan.vehicle_number?.toLowerCase().includes(q)
-    );
-  });
 
   const openScanOrder = async (scan: ProductionScan) => {
     setOpeningScanOrder(scan.id);
@@ -250,243 +216,171 @@ const Production = () => {
     }
   };
 
-  const getTotalUnits = (order: Order) => {
-    if (order.order_tables && order.order_tables.length > 0) {
-      return order.order_tables.reduce((sum, table) => sum + table.quantity, 0);
-    }
-    return order.quantity;
-  };
+  const renderScanTable = (tab: ScanTabKey) => {
+    const theme = SCAN_TABS[tab];
+    const filtered = filterScans(tab);
 
-  const getTopColor = (order: Order) => {
-    if (order.order_tables && order.order_tables.length > 0) {
-      const colors = [...new Set(order.order_tables.map(t => t.top_colour).filter(Boolean))];
-      return colors.join(', ') || order.colour;
+    if (loading) {
+      return <div className="text-center py-8 text-muted-foreground">Loading scans...</div>;
     }
-    return order.colour;
-  };
-
-  const getLegColor = (order: Order) => {
-    if (order.order_tables && order.order_tables.length > 0) {
-      const colors = [...new Set(order.order_tables.map(t => t.frame_colour).filter(Boolean))];
-      return colors.join(', ') || '-';
+    if (filtered.length === 0) {
+      return <div className="text-center py-8 text-muted-foreground">No scan records found</div>;
     }
-    return '-';
-  };
 
-  const getSize = (order: Order) => {
-    if (order.order_tables && order.order_tables.length > 0) {
-      const sizes = [...new Set(order.order_tables.map(t => t.size))];
-      return sizes.join(', ');
-    }
-    return order.table_size;
-  };
-
-  const OrderCard = ({ order, showLoadButton = true }: { order: Order; showLoadButton?: boolean }) => (
-    <Card className="p-4 mb-3 border border-border">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="text-2xl font-bold text-primary mb-2">
-            #{order.order_form_number || 'N/A'}
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Size:</span>
-              <span className="ml-1 font-medium">{getSize(order)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Top Color:</span>
-              <span className="ml-1 font-medium">{getTopColor(order)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Leg Color:</span>
-              <span className="ml-1 font-medium">{getLegColor(order)}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Total Units:</span>
-              <span className="ml-1 font-bold text-primary">{getTotalUnits(order)}</span>
-            </div>
-          </div>
-        </div>
-        {showLoadButton && (
-          <Button 
-            onClick={() => handleLoadClick(order)}
-            className="ml-4"
-            size="lg"
-          >
-            <Truck className="mr-2 h-4 w-4" />
-            Load
-          </Button>
-        )}
+    return (
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className={theme.headClass}>
+              <TableHead className="whitespace-nowrap">Date & Time (SL)</TableHead>
+              <TableHead className="whitespace-nowrap">Order No</TableHead>
+              <TableHead className="whitespace-nowrap">Copy Type</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>District</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Colour</TableHead>
+              <TableHead className="text-center">Qty</TableHead>
+              <TableHead className="whitespace-nowrap">Vehicle / Driver</TableHead>
+              <TableHead>Scanner</TableHead>
+              <TableHead>Device</TableHead>
+              <TableHead>Notes</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map(scan => (
+              <TableRow key={scan.id} className={theme.rowClass}>
+                <TableCell className="whitespace-nowrap">{formatSl(scan.created_at)}</TableCell>
+                <TableCell className="font-medium whitespace-nowrap">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => openScanOrder(scan)}
+                    disabled={openingScanOrder !== null}
+                    aria-label={`View order ${scan.order_form_number}`}
+                  >
+                    {scan.order_form_number}
+                  </Button>
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  <Badge variant="outline" className="text-xs font-medium">
+                    {formatCopyType(scan.copy_type) || '—'}
+                  </Badge>
+                </TableCell>
+                <TableCell>{scan.customer_name || '—'}</TableCell>
+                <TableCell>{scan.customer_district || '—'}</TableCell>
+                <TableCell className="whitespace-nowrap">{scan.table_size || '—'}</TableCell>
+                <TableCell>{scan.colour || '—'}</TableCell>
+                <TableCell className="text-center">{scan.quantity}</TableCell>
+                <TableCell className="whitespace-nowrap">{scan.vehicle_number || '—'}</TableCell>
+                <TableCell>{scan.scanner_name || '—'}</TableCell>
+                <TableCell>{scan.device_id || '—'}</TableCell>
+                <TableCell className="max-w-[200px] truncate" title={scan.notes || ''}>
+                  {scan.notes || '—'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-    </Card>
-  );
+    );
+  };
 
   return (
     <div className="container py-6">
       <h1 className="text-2xl font-bold mb-6">Production Management</h1>
-      
-      {/* Search Box */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by order number..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
 
-      <Card className="p-6">
-        <Tabs defaultValue="available" className="w-full">
-          <TabsList className="mb-4 w-full justify-start">
-            <TabsTrigger value="available" className="flex-1">
-              <Package className="mr-2 h-4 w-4" />
-              Available ({filteredOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="flex-1">
-              <Truck className="mr-2 h-4 w-4" />
-              Completed ({filteredCompletedOrders.length})
-            </TabsTrigger>
-            <TabsTrigger value="scans" className="flex-1">
-              <ScanLine className="mr-2 h-4 w-4" />
-              Production Scans ({filteredScans.length})
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="available">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading orders...</div>
-            ) : filteredOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No pending orders available</div>
-            ) : (
-              <div className="space-y-3">
-                {filteredOrders.map(order => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="completed">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading orders...</div>
-            ) : filteredCompletedOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No completed orders</div>
-            ) : (
-              <div className="space-y-3">
-                {filteredCompletedOrders.map(order => (
-                  <OrderCard key={order.id} order={order} showLoadButton={false} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="scans">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading scans...</div>
-            ) : filteredScans.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No production copy scans found</div>
-            ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Date & Time (SL)</TableHead>
-                      <TableHead className="whitespace-nowrap">Order No</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>District</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Colour</TableHead>
-                      <TableHead className="text-center">Qty</TableHead>
-                      <TableHead className="whitespace-nowrap">Vehicle / Driver</TableHead>
-                      <TableHead>Scanner</TableHead>
-                      <TableHead>Device</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredScans.map(scan => (
-                      <TableRow key={scan.id}>
-                        <TableCell className="whitespace-nowrap">{formatSl(scan.created_at)}</TableCell>
-                        <TableCell className="font-medium whitespace-nowrap">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="h-auto p-0"
-                            onClick={() => openScanOrder(scan)}
-                            disabled={openingScanOrder !== null}
-                            aria-label={`View order ${scan.order_form_number}`}
-                          >
-                            {scan.order_form_number}
-                          </Button>
-                        </TableCell>
-                        <TableCell>{scan.customer_name || '—'}</TableCell>
-                        <TableCell>{scan.customer_district || '—'}</TableCell>
-                        <TableCell className="whitespace-nowrap">{scan.table_size || '—'}</TableCell>
-                        <TableCell>{scan.colour || '—'}</TableCell>
-                        <TableCell className="text-center">{scan.quantity}</TableCell>
-                        <TableCell className="whitespace-nowrap">{scan.vehicle_number || '—'}</TableCell>
-                        <TableCell>{scan.scanner_name || '—'}</TableCell>
-                        <TableCell>{scan.device_id || '—'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={scan.notes || ''}>
-                          {scan.notes || '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </Card>
-
-      {/* Transport Mode Dialog */}
-      <Dialog open={showTransportDialog} onOpenChange={setShowTransportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select Transport Mode</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Select value={transportMode} onValueChange={setTransportMode}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select transport mode" />
-              </SelectTrigger>
+      {/* Search + Filters */}
+      <Card className="p-4 mb-6 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by order number, customer, vehicle, scanner, size, colour or notes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">From (SL time)</label>
+            <Input type="datetime-local" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">To (SL time)</label>
+            <Input type="datetime-local" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Vehicle / Driver</label>
+            <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
+              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
               <SelectContent>
-                {TRANSPORT_MODES.map(mode => (
-                  <SelectItem key={mode} value={mode}>{mode}</SelectItem>
-                ))}
+                <SelectItem value="all">All</SelectItem>
+                {vehicleOptions.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTransportDialog(false)}>
-              Cancel
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Scanner</label>
+            <Select value={scannerFilter} onValueChange={setScannerFilter}>
+              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {scannerOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">District</label>
+            <Select value={districtFilter} onValueChange={setDistrictFilter}>
+              <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {districtOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              className="w-full"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear Filters
             </Button>
-            <Button onClick={handleTransportSelect}>
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </Card>
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Loading</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to load order #{selectedOrder?.order_form_number} using "{transportMode}"?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={processingLoad}>No</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmLoad} disabled={processingLoad}>
-              {processingLoad ? 'Processing...' : 'Yes'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Card className="p-6">
+        <Tabs defaultValue="production" className="w-full">
+          <TabsList className="mb-4 w-full justify-start">
+            {(Object.keys(SCAN_TABS) as ScanTabKey[]).map(tab => {
+              const theme = SCAN_TABS[tab];
+              return (
+                <TabsTrigger key={tab} value={tab} className={cn('flex-1', theme.triggerClass)}>
+                  <theme.Icon className="mr-2 h-4 w-4" />
+                  {theme.label} ({filterScans(tab).length})
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+
+          {(Object.keys(SCAN_TABS) as ScanTabKey[]).map(tab => (
+            <TabsContent key={tab} value={tab}>
+              <div className="flex justify-end mb-3">
+                <Button variant="outline" onClick={() => exportToExcel(tab)}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Excel
+                </Button>
+              </div>
+              {renderScanTable(tab)}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </Card>
     </div>
   );
 };
