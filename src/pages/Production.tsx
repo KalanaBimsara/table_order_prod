@@ -10,8 +10,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { cn } from '@/lib/utils';
+import {
+  fetchOrderDetailsForScans,
+  formatTableColours,
+  formatTableSizes,
+  orderItemLines,
+  totalTableQuantity,
+  type OrderTableRow,
+} from '@/lib/scanOrderTables';
+import { buildOrderItemsSheet, type OrderSheetColumn } from '@/lib/orderItemsSheet';
 
 // The system is used in Sri Lanka (Asia/Colombo, UTC+5:30).
 const SL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -73,6 +82,8 @@ type ScanTabKey = keyof typeof SCAN_TABS;
 
 const Production = () => {
   const [scans, setScans] = useState<ProductionScan[]>([]);
+  const [scanTables, setScanTables] = useState<Map<string, OrderTableRow[]>>(new Map());
+  const [salesPersons, setSalesPersons] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -94,13 +105,44 @@ const Production = () => {
         .limit(2000);
 
       if (error) throw error;
-      setScans((data as ProductionScan[]) || []);
+      const rows = (data as ProductionScan[]) || [];
+      setScans(rows);
+      try {
+        const details = await fetchOrderDetailsForScans(rows);
+        setScanTables(details.tables);
+        setSalesPersons(details.salesPersons);
+      } catch (tableError) {
+        console.error('Error fetching order table details:', tableError);
+        toast.error('Could not load table details — showing scanned values instead');
+      }
     } catch (error) {
       console.error('Error fetching scans:', error);
       toast.error('Failed to fetch scan records');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Table details come from the order_tables table; the scan's own columns are the fallback.
+  const tablesFor = (scan: ProductionScan) => scanTables.get(scan.id) || [];
+  const sizeFor = (scan: ProductionScan) => {
+    const rows = tablesFor(scan);
+    return rows.length ? formatTableSizes(rows) : scan.table_size || '';
+  };
+  // One line per order item: its size, unit count and colour (scan values as fallback).
+  const itemLinesFor = (scan: ProductionScan) =>
+    orderItemLines(tablesFor(scan), {
+      size: scan.table_size || '',
+      units: scan.quantity,
+      colour: scan.colour || '',
+    });
+  const colourFor = (scan: ProductionScan) => {
+    const rows = tablesFor(scan);
+    return rows.length ? formatTableColours(rows) : scan.colour || '';
+  };
+  const quantityFor = (scan: ProductionScan) => {
+    const rows = tablesFor(scan);
+    return rows.length ? totalTableQuantity(rows) : scan.quantity;
   };
 
   useEffect(() => {
@@ -151,39 +193,38 @@ const Production = () => {
         scan.customer_name?.toLowerCase().includes(q) ||
         scan.scanner_name?.toLowerCase().includes(q) ||
         scan.vehicle_number?.toLowerCase().includes(q) ||
-        scan.table_size?.toLowerCase().includes(q) ||
-        scan.colour?.toLowerCase().includes(q) ||
+        sizeFor(scan).toLowerCase().includes(q) ||
+        colourFor(scan).toLowerCase().includes(q) ||
         scan.notes?.toLowerCase().includes(q)
       );
     });
   };
 
   const exportToExcel = (tab: ScanTabKey) => {
-    const rows = filterScans(tab).map(scan => ({
-      'Date & Time (SL)': formatSl(scan.created_at),
-      'Order No': scan.order_form_number,
-      'Copy Type': formatCopyType(scan.copy_type),
-      'Customer': scan.customer_name || '',
-      'District': scan.customer_district || '',
-      'Size': scan.table_size || '',
-      'Colour': scan.colour || '',
-      'Qty': scan.quantity,
-      'Vehicle / Driver': scan.vehicle_number || '',
-      'Scanner': scan.scanner_name || '',
-      'Device': scan.device_id || '',
-      'Notes': scan.notes || '',
-    }));
+    const records = filterScans(tab);
 
-    if (rows.length === 0) {
+    if (records.length === 0) {
       toast.error('No records to export');
       return;
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet['!cols'] = [
-      { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 12 },
-      { wch: 12 }, { wch: 6 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 30 },
+    const columns: OrderSheetColumn<ProductionScan>[] = [
+      { header: 'Date & Time (SL)', width: 18, value: scan => formatSl(scan.created_at) },
+      { header: 'Order No', width: 12, value: scan => scan.order_form_number },
+      { header: 'Copy Type', width: 16, value: scan => formatCopyType(scan.copy_type) },
+      { header: 'Customer', width: 22, value: scan => scan.customer_name },
+      { header: 'District', width: 14, value: scan => scan.customer_district },
+      { header: 'Sales Person', width: 18, value: scan => salesPersons.get(scan.id) },
+      { header: 'Size', width: 12, item: 'size' },
+      { header: 'Units', width: 8, center: true, item: 'units' },
+      { header: 'Colour', width: 26, item: 'colour' },
+      { header: 'Total Qty', width: 10, center: true, value: quantityFor },
+      { header: 'Vehicle / Driver', width: 18, value: scan => scan.vehicle_number },
+      { header: 'Scanner', width: 14, value: scan => scan.scanner_name },
+      { header: 'Device', width: 12, value: scan => scan.device_id },
+      { header: 'Notes', width: 30, value: scan => scan.notes },
     ];
+    const worksheet = buildOrderItemsSheet(records, columns, itemLinesFor);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, SCAN_TABS[tab].label);
     XLSX.writeFile(workbook, `${SCAN_TABS[tab].copyType.replace(' ', '-')}-scans.xlsx`);
@@ -229,7 +270,7 @@ const Production = () => {
 
     return (
       <div className="rounded-md border overflow-x-auto">
-        <Table>
+        <Table className="[&_th]:border [&_td]:border [&_th]:border-foreground/25 [&_td]:border-foreground/25">
           <TableHeader>
             <TableRow className={theme.headClass}>
               <TableHead className="whitespace-nowrap">Date & Time (SL)</TableHead>
@@ -237,7 +278,9 @@ const Production = () => {
               <TableHead className="whitespace-nowrap">Copy Type</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>District</TableHead>
+              <TableHead className="whitespace-nowrap">Sales Person</TableHead>
               <TableHead>Size</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Units</TableHead>
               <TableHead>Colour</TableHead>
               <TableHead className="text-center">Qty</TableHead>
               <TableHead className="whitespace-nowrap">Vehicle / Driver</TableHead>
@@ -247,39 +290,57 @@ const Production = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map(scan => (
-              <TableRow key={scan.id} className={theme.rowClass}>
-                <TableCell className="whitespace-nowrap">{formatSl(scan.created_at)}</TableCell>
-                <TableCell className="font-medium whitespace-nowrap">
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0"
-                    onClick={() => openScanOrder(scan)}
-                    disabled={openingScanOrder !== null}
-                    aria-label={`View order ${scan.order_form_number}`}
-                  >
-                    {scan.order_form_number}
-                  </Button>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge variant="outline" className="text-xs font-medium">
-                    {formatCopyType(scan.copy_type) || '—'}
-                  </Badge>
-                </TableCell>
-                <TableCell>{scan.customer_name || '—'}</TableCell>
-                <TableCell>{scan.customer_district || '—'}</TableCell>
-                <TableCell className="whitespace-nowrap">{scan.table_size || '—'}</TableCell>
-                <TableCell>{scan.colour || '—'}</TableCell>
-                <TableCell className="text-center">{scan.quantity}</TableCell>
-                <TableCell className="whitespace-nowrap">{scan.vehicle_number || '—'}</TableCell>
-                <TableCell>{scan.scanner_name || '—'}</TableCell>
-                <TableCell>{scan.device_id || '—'}</TableCell>
-                <TableCell className="max-w-[200px] truncate" title={scan.notes || ''}>
-                  {scan.notes || '—'}
-                </TableCell>
-              </TableRow>
-            ))}
+            {filtered.map(scan => {
+              const lines = itemLinesFor(scan);
+              const span = lines.length;
+              return (
+                <React.Fragment key={scan.id}>
+                  {lines.map((line, index) => (
+                    <TableRow key={index} className={theme.rowClass}>
+                      {index === 0 && (
+                        <>
+                          <TableCell rowSpan={span} className="whitespace-nowrap">{formatSl(scan.created_at)}</TableCell>
+                          <TableCell rowSpan={span} className="font-medium whitespace-nowrap">
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0"
+                              onClick={() => openScanOrder(scan)}
+                              disabled={openingScanOrder !== null}
+                              aria-label={`View order ${scan.order_form_number}`}
+                            >
+                              {scan.order_form_number}
+                            </Button>
+                          </TableCell>
+                          <TableCell rowSpan={span} className="whitespace-nowrap">
+                            <Badge variant="outline" className="text-xs font-medium">
+                              {formatCopyType(scan.copy_type) || '—'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell rowSpan={span}>{scan.customer_name || '—'}</TableCell>
+                          <TableCell rowSpan={span}>{scan.customer_district || '—'}</TableCell>
+                          <TableCell rowSpan={span}>{salesPersons.get(scan.id) || '—'}</TableCell>
+                        </>
+                      )}
+                      <TableCell className="whitespace-nowrap">{line.size || '—'}</TableCell>
+                      <TableCell className="text-center">{line.units ?? '—'}</TableCell>
+                      <TableCell className="whitespace-nowrap">{line.colour || '—'}</TableCell>
+                      {index === 0 && (
+                        <>
+                          <TableCell rowSpan={span} className="text-center">{quantityFor(scan)}</TableCell>
+                          <TableCell rowSpan={span} className="whitespace-nowrap">{scan.vehicle_number || '—'}</TableCell>
+                          <TableCell rowSpan={span}>{scan.scanner_name || '—'}</TableCell>
+                          <TableCell rowSpan={span}>{scan.device_id || '—'}</TableCell>
+                          <TableCell rowSpan={span} className="max-w-[200px] truncate" title={scan.notes || ''}>
+                            {scan.notes || '—'}
+                          </TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
