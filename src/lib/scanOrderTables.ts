@@ -15,6 +15,32 @@ interface ScanLike {
   id: string;
   order_id: string | null;
   order_form_number: string;
+  table_size?: string | null;
+  colour?: string | null;
+  quantity?: number | null;
+}
+
+const norm = (v: string | null | undefined) => (v || '').trim().toLowerCase().replace(/[\s_]+/g, '');
+
+/**
+ * Keeps only the order item(s) this scan was for: same size, and same colour when the
+ * scan recorded one. Returns [] when nothing matches so the scanned values are shown instead.
+ */
+export function matchScannedRows(scan: ScanLike, rows: OrderTableRow[]): OrderTableRow[] {
+  const size = norm(scan.table_size);
+  if (!size) return rows;
+  let matches = rows.filter(r => norm(r.size) === size);
+  const colour = norm(scan.colour);
+  if (colour && matches.length > 1) {
+    const byColour = matches.filter(r =>
+      [r.top_colour, r.colour, r.frame_colour].some(c => norm(c) === colour)
+    );
+    if (byColour.length) matches = byColour;
+  }
+  if (matches.length === 1 && scan.quantity) {
+    matches = [{ ...matches[0], quantity: scan.quantity }];
+  }
+  return matches;
 }
 
 const CHUNK_SIZE = 100;
@@ -83,7 +109,7 @@ export async function fetchOrderDetailsForScans<T extends ScanLike>(scans: T[]):
 
   for (const scan of scans) {
     const orderId = orderIdForScan(scan);
-    tables.set(scan.id, (orderId && rowsByOrderId.get(orderId)) || []);
+    tables.set(scan.id, matchScannedRows(scan, (orderId && rowsByOrderId.get(orderId)) || []));
     const salesPerson = orderId && salesPersonByOrderId.get(orderId);
     if (salesPerson) salesPersons.set(scan.id, salesPerson);
   }
@@ -124,3 +150,16 @@ export const orderItemLines = (rows: OrderTableRow[], fallback: OrderItemLine): 
   rows.length
     ? rows.map(r => ({ size: r.size, units: r.quantity, colour: formatItemColour(r) }))
     : [fallback];
+
+/**
+ * Scanner notes are stored as a machine payload, e.g.
+ * "FEATURE_KEY=3535|30x60|teak|black|1.5x1.5|34|o shape;size=30x60;...;qty=2;userNote=test".
+ * Only what the operator typed (the `userNote` value) is worth showing; plain notes
+ * typed without a payload are shown as they are.
+ */
+export const userNoteText = (notes: string | null | undefined): string => {
+  if (!notes) return '';
+  const match = /(?:^|;)\s*userNote\s*=\s*/i.exec(notes);
+  if (match) return notes.slice(match.index + match[0].length).trim();
+  return notes.includes('FEATURE_KEY') ? '' : notes.trim();
+};

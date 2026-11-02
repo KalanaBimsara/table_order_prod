@@ -18,6 +18,7 @@ import {
   formatTableSizes,
   orderItemLines,
   totalTableQuantity,
+  userNoteText,
   type OrderTableRow,
 } from '@/lib/scanOrderTables';
 import { buildOrderItemsSheet, type OrderSheetColumn } from '@/lib/orderItemsSheet';
@@ -195,7 +196,7 @@ const Production = () => {
         scan.vehicle_number?.toLowerCase().includes(q) ||
         sizeFor(scan).toLowerCase().includes(q) ||
         colourFor(scan).toLowerCase().includes(q) ||
-        scan.notes?.toLowerCase().includes(q)
+        userNoteText(scan.notes).toLowerCase().includes(q)
       );
     });
   };
@@ -222,7 +223,7 @@ const Production = () => {
       { header: 'Vehicle / Driver', width: 18, value: scan => scan.vehicle_number },
       { header: 'Scanner', width: 14, value: scan => scan.scanner_name },
       { header: 'Device', width: 12, value: scan => scan.device_id },
-      { header: 'Notes', width: 30, value: scan => scan.notes },
+      { header: 'Notes', width: 30, value: scan => userNoteText(scan.notes) },
     ];
     const worksheet = buildOrderItemsSheet(records, columns, itemLinesFor);
     const workbook = XLSX.utils.book_new();
@@ -331,8 +332,8 @@ const Production = () => {
                           <TableCell rowSpan={span} className="whitespace-nowrap">{scan.vehicle_number || '—'}</TableCell>
                           <TableCell rowSpan={span}>{scan.scanner_name || '—'}</TableCell>
                           <TableCell rowSpan={span}>{scan.device_id || '—'}</TableCell>
-                          <TableCell rowSpan={span} className="max-w-[200px] truncate" title={scan.notes || ''}>
-                            {scan.notes || '—'}
+                          <TableCell rowSpan={span} className="max-w-[200px] truncate" title={userNoteText(scan.notes)}>
+                            {userNoteText(scan.notes) || '—'}
                           </TableCell>
                         </>
                       )}

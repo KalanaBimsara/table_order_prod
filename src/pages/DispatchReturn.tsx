@@ -30,6 +30,7 @@ import {
   formatTableSizes,
   orderItemLines,
   totalTableQuantity,
+  userNoteText,
   type OrderTableRow,
 } from '@/lib/scanOrderTables';
 import { buildOrderItemsSheet, type OrderSheetColumn } from '@/lib/orderItemsSheet';
@@ -214,7 +215,7 @@ const DispatchReturn = () => {
         sizeFor(log),
         colourFor(log),
         log.copy_type,
-        log.notes,
+        userNoteText(log.notes),
         log.operation_mode,
       ]
         .filter(Boolean)
@@ -285,7 +286,7 @@ const DispatchReturn = () => {
     { header: 'Device', width: 12, value: (log) => log.device_id },
     { header: 'Copy Type', width: 12, value: (log) => log.copy_type },
     { header: 'Restocked', width: 10, value: (log) => (log.restocked ? 'Yes' : 'No') },
-    { header: 'Notes', width: 30, value: (log) => log.notes },
+    { header: 'Notes', width: 30, value: (log) => userNoteText(log.notes) },
   ];
   const buildSheet = (rows: DispatchReturnLog[]) =>
     buildOrderItemsSheet(rows, sheetColumns, itemLinesFor);
@@ -391,8 +392,8 @@ const DispatchReturn = () => {
                               </Badge>
                             </TableCell>
                           )}
-                          <TableCell rowSpan={span} className="max-w-[220px] truncate" title={log.notes || ''}>
-                            {log.notes || '—'}
+                          <TableCell rowSpan={span} className="max-w-[220px] truncate" title={userNoteText(log.notes)}>
+                            {userNoteText(log.notes) || '—'}
                           </TableCell>
                         </>
                       )}
