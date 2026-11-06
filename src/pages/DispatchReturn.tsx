@@ -34,6 +34,7 @@ import {
   type OrderTableRow,
 } from '@/lib/scanOrderTables';
 import { buildOrderItemsSheet, type OrderSheetColumn } from '@/lib/orderItemsSheet';
+import { totalDispatchedUnits } from '@/lib/dispatchTotals';
 
 // The system is used in Sri Lanka (Asia/Colombo, UTC+5:30).
 const SL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -126,21 +127,27 @@ const DispatchReturn = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('dispatch_return_logs')
-        .select('*')
-        .ilike('copy_type', 'gate pass')
-        .order('created_at', { ascending: false })
-        .limit(5000);
-
       const fromIso = fromDateTime.trim() ? slLocalToUtcIso(fromDateTime.trim()) : null;
       const toIso = toDateTime.trim() ? slLocalToUtcIso(toDateTime.trim()) : null;
-      if (fromIso) query = query.gte('created_at', fromIso);
-      if (toIso) query = query.lte('created_at', toIso);
-
-      const { data, error } = await query;
-      if (error) throw error;
-      const rows = (data as DispatchReturnLog[]) || [];
+      // Fetch every matching scan so the total cannot be truncated by a row limit.
+      const rows: DispatchReturnLog[] = [];
+      const pageSize = 1000;
+      for (let offset = 0; ; offset += pageSize) {
+        let query = supabase
+          .from('dispatch_return_logs')
+          .select('*')
+          .ilike('copy_type', 'gate pass')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        if (fromIso) query = query.gte('created_at', fromIso);
+        if (toIso) query = query.lte('created_at', toIso);
+        const { data, error } = await query;
+        if (error) throw error;
+        const page = (data as DispatchReturnLog[]) || [];
+        rows.push(...page);
+        if (page.length < pageSize) break;
+      }
       setLogs(rows);
       try {
         const details = await fetchOrderDetailsForScans(rows);
@@ -230,6 +237,7 @@ const DispatchReturn = () => {
     [filteredLogs]
   );
   const returnedLogs = useMemo(() => filteredLogs.filter(isReturnLog), [filteredLogs]);
+  const dispatchedUnits = useMemo(() => totalDispatchedUnits(dispatchedLogs), [dispatchedLogs]);
 
   const visibleLogs = recordView === 'dispatch' ? dispatchedLogs : returnedLogs;
   const theme = MODE_THEMES[recordView];
@@ -521,6 +529,15 @@ const DispatchReturn = () => {
           </div>
         </CardContent>
       </Card>
+
+      <section aria-label="Dispatch totals" aria-live="polite" className="flex items-center gap-4 border-y border-primary/30 bg-primary/5 px-4 py-4">
+        <PackageCheck className="h-8 w-8 shrink-0 text-primary" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Total Dispatched Units</p>
+          <p className="text-3xl font-bold tabular-nums text-primary">{loading ? '—' : dispatchedUnits.toLocaleString('en-LK')}</p>
+          <p className="text-xs text-muted-foreground">{loading ? 'Loading…' : `${dispatchedLogs.length} dispatch scans · Selected period and filters`}</p>
+        </div>
+      </section>
 
       {/* Mode switch — the active mode is shown filled in its own colour */}
       <div className="grid grid-cols-2 gap-3 sm:mx-auto sm:max-w-lg">

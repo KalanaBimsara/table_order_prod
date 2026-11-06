@@ -17,10 +17,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Download, Truck, FileText, ChevronDown, Calendar, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { totalDispatchedUnits, unitsToManufacture } from '@/lib/dispatchTotals';
 
 // The system is used in Sri Lanka (Asia/Colombo, UTC+5:30).
 const SL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -214,6 +221,9 @@ const Transport: React.FC = () => {
   const [toDate, setToDate] = useState<string>('');
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [summaryRows, setSummaryRows] = useState<OrderRow[]>([]);
+  const [manufactureRows, setManufactureRows] = useState<OrderRow[]>([]);
+  const [gatePassLogs, setGatePassLogs] = useState<{ operation_mode: string; quantity: number }[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'assigned' | 'completed'>('all');
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -235,10 +245,10 @@ const Transport: React.FC = () => {
       let reportQ = supabase
         .from('orders')
         .select(baseSelect)
-        .eq('status', 'pending')
         .not('order_form_number', 'is', null)
         .order('order_form_number', { ascending: true })
         .limit(1000);
+      if (statusFilter !== 'all') reportQ = reportQ.eq('status', statusFilter);
       reportQ = applyFilters(reportQ);
 
       let summaryQ = supabase
@@ -247,10 +257,50 @@ const Transport: React.FC = () => {
         .not('order_form_number', 'is', null)
         .order('order_form_number', { ascending: true })
         .limit(1000);
+      if (statusFilter !== 'all') summaryQ = summaryQ.eq('status', statusFilter);
       summaryQ = applyFilters(summaryQ);
 
-      const [{ data: reportData, error: reportError }, { data: summaryData, error: summaryError }] =
-        await Promise.all([reportQ, summaryQ]);
+      // Both calculation inputs use the selected Sri Lankan date/time and order
+      // number range, independently of the report's status filter.
+      const fetchManufactureRows = async () => {
+        const result: OrderRow[] = [];
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await applyFilters(supabase
+        .from('orders')
+        .select(baseSelect)
+        .eq('status', 'pending')
+        .not('order_form_number', 'is', null)
+        .order('order_form_number', { ascending: true })
+        .order('id', { ascending: true }))
+            .range(offset, offset + 999);
+          if (error) throw error;
+          result.push(...(data || []));
+          if (!data || data.length < 1000) return result;
+        }
+      };
+
+      const fetchGatePassLogs = async () => {
+        const result: { operation_mode: string; quantity: number }[] = [];
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await applyFilters(supabase
+            .from('dispatch_return_logs')
+            .select('operation_mode, quantity')
+            .ilike('copy_type', 'gate pass')
+            .order('created_at', { ascending: true })
+            .order('id', { ascending: true }))
+            .range(offset, offset + 999);
+          if (error) throw error;
+          result.push(...(data || []));
+          if (!data || data.length < 1000) return result;
+        }
+      };
+
+      const [
+        { data: reportData, error: reportError },
+        { data: summaryData, error: summaryError },
+        manufactureData,
+        dispatchData,
+      ] = await Promise.all([reportQ, summaryQ, fetchManufactureRows(), fetchGatePassLogs()]);
       if (reportError) throw reportError;
       if (summaryError) throw summaryError;
 
@@ -264,6 +314,8 @@ const Transport: React.FC = () => {
 
       setRows(sortRows(reportData) as OrderRow[]);
       setSummaryRows(sortRows(summaryData) as OrderRow[]);
+      setManufactureRows(sortRows(manufactureData) as OrderRow[]);
+      setGatePassLogs(dispatchData);
     } catch (e: any) {
       console.error(e);
       toast.error('දත්ත ලබා ගැනීමට අසමත් විය');
@@ -295,16 +347,24 @@ const Transport: React.FC = () => {
       };
     });
     const totalUnits = breakdown.reduce((sum, o) => sum + o.units, 0);
+    const pendingUnits = manufactureRows.reduce(
+      (sum, r) => sum + (r.order_tables?.reduce((s, t) => s + (t.quantity || 0), 0) || 0),
+      0
+    );
     return {
       totalOrders: summaryRows.length,
       totalUnits,
+      manufacturingOrders: manufactureRows.length,
+      manufacturingUnits: unitsToManufacture(pendingUnits, gatePassLogs),
+      pendingUnits,
+      dispatchedUnits: totalDispatchedUnits(gatePassLogs),
       breakdown,
     };
-  }, [summaryRows]);
+  }, [summaryRows, manufactureRows, gatePassLogs]);
 
   const openReport = (kind: ReportKind) => {
     if (!rows.length) {
-      toast.warning('තෝරාගත් පරාසය තුළ පොරොත්තු ඕඩර නොමැත');
+      toast.warning('තෝරාගත් පරාසය තුළ ඕඩර නොමැත');
     }
     const html = buildReportHtml(kind, rows, rangeLabel);
     const w = window.open('', '_blank');
@@ -329,7 +389,24 @@ const Transport: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div>
+              <label className="text-sm font-medium block mb-1">Order Status</label>
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-sm font-medium block mb-1">From Order No</label>
               <Input
@@ -397,7 +474,7 @@ const Transport: React.FC = () => {
           </div>
 
           <div className="text-sm text-muted-foreground">
-            {rows.length} pending orders in range · {summaryRows.length} total orders in range
+            {rows.length} {statusFilter === 'all' ? '' : `${statusFilter} `}orders in range · {summaryRows.length} orders in summary · {summary.manufacturingOrders} orders to be manufactured
           </div>
         </CardContent>
       </Card>
@@ -412,7 +489,7 @@ const Transport: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="border border-primary/20 bg-primary/5">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
@@ -429,6 +506,16 @@ const Transport: React.FC = () => {
                   <p className="text-3xl font-bold">{summary.totalUnits}</p>
                 </div>
                 <Truck className="h-8 w-8 text-primary opacity-80" />
+              </CardContent>
+            </Card>
+            <Card className="border border-amber-500/30 bg-amber-500/10">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">To Be Manufactured</p>
+                  <p className="text-3xl font-bold">{summary.manufacturingOrders}</p>
+                  <p className="text-xs text-muted-foreground">{summary.manufacturingUnits} units ({summary.pendingUnits} pending − {summary.dispatchedUnits} dispatched)</p>
+                </div>
+                <Package className="h-8 w-8 text-amber-600 opacity-80" />
               </CardContent>
             </Card>
           </div>
